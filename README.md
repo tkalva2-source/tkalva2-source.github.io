@@ -1,6 +1,6 @@
 # Paintwatch
 
-**Live site: https://tkalva2-source.github.io/paintwatch/**
+**Live site: https://tkalva2-source.github.io/**
 
 A fan-made swatch book for 7TV name paints:
 - Look up anyone's paints, badges, subscription and paint wall.
