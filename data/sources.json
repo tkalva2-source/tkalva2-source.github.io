@@ -1003,6 +1003,7 @@
   "01JFQV4W300XYMWDJW7E1TVY34": [
    "event|2024 Minecraft Participant",
    "event|2024 Minecraft Streamer",
+   "granted|",
    "subscription|"
   ],
   "01JM3P7C1EJ4MH69BDNV0670JZ": [
@@ -1484,7 +1485,8 @@
   ],
   "01JG7HNY3EXYD9ANZ3HFAC6STJ": [
    "event|NNYS 2025 - Golden Gondola",
-   "event|NNYS chat raffle"
+   "event|NNYS chat raffle",
+   "event|test"
   ],
   "01K8NJ39SW27ADSY0003EN4Q1Q": [
    "subscription|"
@@ -2548,6 +2550,9 @@
    "granted|"
   ],
   "01J6HFQX9R0000C3K9R5FPTP06": [
+   "granted|"
+  ],
+  "01HW64CT5000000R4ZCT3E25J6": [
    "granted|"
   ]
  }
