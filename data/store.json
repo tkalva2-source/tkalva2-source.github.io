@@ -1,0 +1,832 @@
+{
+ "monthly": [
+  "01M3QBDT5898F5FE44393ADKQ2",
+  "01M3QBE4EMJZJQ558B9XTYKH4A",
+  "01M3QBDYT0V77E2TXGW3SP6AEK",
+  "01M3QBE8ZZAC1WF3CR4RNGGQVX",
+  "01M3QBESQ89Z6DDENSWNYJDB1D"
+ ],
+ "shop": [
+  {
+   "name": "Uranium",
+   "items": [
+    "01G9DJJ40G00044BJY7M3198HC"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Fairy Glow",
+   "items": [
+    "01G34KG5RG000EM3XQPTD2XAFA"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Ice Cold",
+   "items": [
+    "01GEWY836G000EZEK94KRK9Y6T"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Pastel",
+   "items": [
+    "01GNQWJXE00002EWZQD7W8EJMS"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Decker Down",
+   "items": [
+    "01M57S0EVCG5GMMQ35C1N0GT0A"
+   ],
+   "currency": "eur",
+   "price": 999,
+   "bundle": false
+  },
+  {
+   "name": "Sunset",
+   "items": [
+    "01FRV9P7ZR000E7692NF398GSR"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Slashed",
+   "items": [
+    "01GF9VYRWR00085WMXZZDT51QQ"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Blueberry",
+   "items": [
+    "01G5F1DFSG0006W37G6JG3E0YE"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Fire & Ice",
+   "items": [
+    "01G5F1JVNG0006W37G6JG3E0YG"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Gamer Girl",
+   "items": [
+    "01HWNTZ2Z0000EPPN7X3TJJ9ET"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Monstera",
+   "items": [
+    "01G34KJWNR000EM3XQPTD2XAFC"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Farmer's Sky",
+   "items": [
+    "01G8GNW720000BHCZJ5VGD6216"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Cream Soda",
+   "items": [
+    "01H470WFRG000DT06RDRDY7CQX"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Haunted",
+   "items": [
+    "01M5WGNFCTRZMP7NAYGM0BAW8T"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Fresh Blood",
+   "items": [
+    "01M5WJ738ZC99A90RSWPH0FPCJ"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Graveyard",
+   "items": [
+    "01M5WH6N84HKZ9HYKYWCRG1KJ7"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Paranormal",
+   "items": [
+    "01M5WJAMM9YPWD5EG1HJSKY2EC"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Midnight Moon",
+   "items": [
+    "01M5WGRMJC6G105JNZX0PNZ54D"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Dark Paws",
+   "items": [
+    "01M5ZG3FAA6SVFHES09A2WG0CP"
+   ],
+   "currency": "eur",
+   "price": 299,
+   "bundle": false
+  },
+  {
+   "name": "Mexico",
+   "items": [
+    "01KTPNEKN9ZN09P34HRE3PTZFJ"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "South Africa",
+   "items": [
+    "01KTPNGCVGHBED09AZENCTX3RR"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "South Korea",
+   "items": [
+    "01KTVDT23P164PT41896M1SFM2"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Czechia",
+   "items": [
+    "01KTVDRJQQAQZYC1PXD4ZRX5VT"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Canada",
+   "items": [
+    "01KTVDQ1939VN1GVN0ZE7XAV0H"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Bosnia",
+   "items": [
+    "01KTVDNG6WYC0N95Z6ZP3VB6BQ"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "USA",
+   "items": [
+    "01KTXY7KWQ2RPR18Y5YMNPBVNR"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Paraguay",
+   "items": [
+    "01KTXYGRQRX0KBSJ3XQ28PVVQ9"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Qatar",
+   "items": [
+    "01KV069H178K51J25TSGRTDDX9"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Switzerland",
+   "items": [
+    "01KV06C4S1YBQF8P8YFQSE9S5R"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Brazil",
+   "items": [
+    "01KV06EB8YGJZRX4WBTJZ62GC6"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Morocco",
+   "items": [
+    "01KV06G6GN6YCNCBXNNR43V1K6"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Haiti",
+   "items": [
+    "01KV06K03RKQPRF10KTMZXBBSC"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Scotland",
+   "items": [
+    "01KV06N60HJWQH12ENYA8TED6M"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Germany",
+   "items": [
+    "01KV1CT5KA2CBW7Q0VX8W9A627"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Curacao",
+   "items": [
+    "01KV1CMPDD1X6CRH2YWDF63Q2T"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Netherlands",
+   "items": [
+    "01KV1CRP16YQ1Y6M84QV7CBYGZ"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Japan",
+   "items": [
+    "01KV1CVJFZ3064N4NP7A4R8GAX"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Ivory Coast",
+   "items": [
+    "01KV1CEQ8NGPVDRM7N9TBEBER7"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Ecuador",
+   "items": [
+    "01KV1C9AV2NMN9NE329KPSD5H3"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Australia",
+   "items": [
+    "01KV1CC9N5R1RG1TGHK0T42WZN"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Turkey",
+   "items": [
+    "01KV1CGMKZYGY10Z7CJNEPNGHS"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Sweden",
+   "items": [
+    "01KV1CPFQDW440628TRPKTVZPY"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Tunisia",
+   "items": [
+    "01KV1CJFZ47DEBJEZ69BRKRXMG"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Spain",
+   "items": [
+    "01KV579Z1WKS86QKAG4YRHTAGM"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Cabo Verde",
+   "items": [
+    "01KV57CA80868QGDDKMDWYG0AD"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Belgium",
+   "items": [
+    "01KV57EPKZ6Q0H8V3GFP311Z3Y"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Egypt",
+   "items": [
+    "01KV57GMGBK5V3S7VTVC07P3A5"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Saudi Arabia",
+   "items": [
+    "01KV57JNXGT1R7N6FJAZWKHVG5"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Uruguay",
+   "items": [
+    "01KV57T7W45ASA2H8Y6V4CWEVM"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Iran",
+   "items": [
+    "01KV57WA7WE7792AWQS6FNPAYQ"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "New Zealand",
+   "items": [
+    "01KV57YC4YAHH8X2QAF5Z1QW4D"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "France",
+   "items": [
+    "01KV7S10JSFPGTYX3TNF9GXCY0"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Senegal",
+   "items": [
+    "01KV7S2EW0D9PKX6PADWCR2CD8"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Iraq",
+   "items": [
+    "01KV7S47KTSW3K2080YZKTS8PM"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Norway",
+   "items": [
+    "01KV7S5R9QC539X5F9Q0HWRPGF"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Argentina",
+   "items": [
+    "01KV7S7NFKYPT782K040HEBA3N"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Algeria",
+   "items": [
+    "01KV7S9V5EEA7EH56AFCKA27YV"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Austria",
+   "items": [
+    "01KV7SBMZ8TKWQ9FANE5WWY1YK"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Jordan",
+   "items": [
+    "01KV7SDDXKCAHWZJXZQWVP1C30"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Portugal",
+   "items": [
+    "01KVAAVSF9RTF3QE15941RN9SR"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "DR Congo",
+   "items": [
+    "01KVAAXPDFK6202GVY0G5B226P"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "England",
+   "items": [
+    "01KVAAZDKB0ME583PYG0GVGC42"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Croatia",
+   "items": [
+    "01KVAB2TGJ8CC8AF6AXH8QW0QQ"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Ghana",
+   "items": [
+    "01KVAB4NEGSM3BNEV0X23EES4N"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Panama",
+   "items": [
+    "01KVAB671WC15FZ24385GPXXF8"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Uzbekistan",
+   "items": [
+    "01KVAB8DSDNK1BF41JSB557ARP"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Colombia",
+   "items": [
+    "01KVABA7Q6HGCGTNSC84SXEBSF"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Hero",
+   "items": [
+    "01M506SVQJAK02KRF6B99Z2BK1"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Sword",
+   "items": [
+    "01M506XPKKADBX2NSM1APDMHXM"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Health Potion",
+   "items": [
+    "01M506SCSKY72FHA3FB88D6V58"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Stealthy",
+   "items": [
+    "01M506X4MK0BCYW45AV9V0ZHMH"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Italy",
+   "items": [
+    "01M4ZKM7MADV6K5SET8MYYPZ13"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Denmark",
+   "items": [
+    "01M4ZJWDTWZBTKNH7NM3A2DFDD"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Poland",
+   "items": [
+    "01M4ZJXM56K1SYMZR57RHPEXB9"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Albania",
+   "items": [
+    "01M4ZJV31Z665RHG50B9V7C1Q0"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Rwanda",
+   "items": [
+    "01M4ZJY2PFG3PF55VPZNC08BAW"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Uganda",
+   "items": [
+    "01M4ZJYPV8XNRDVP7ZFQ2X0XEM"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Cutely",
+   "items": [
+    "01M506MW5EVSVT0Q5C5TVRHN0A"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Fishy",
+   "items": [
+    "01M506NG7PVVM4377YSZCWTW7G"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Flaming",
+   "items": [
+    "01M506QQ3QQ6X67D5XY5253XJ9"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Leaf",
+   "items": [
+    "01M506TE20DSDHK6TKMW0XM6AG"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Meowdy",
+   "items": [
+    "01M506V540GAK3E1Z9G5FW0RQA"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Rubber Ducky",
+   "items": [
+    "01M506VNSGKBR04Q3002HN57YK"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Waterdrop",
+   "items": [
+    "01M506Y6KYZ4YVNVP0RCT02KC6"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Bat",
+   "items": [
+    "01M5YV3JC85KDW4PAKEHKJEAAG"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Cauldron",
+   "items": [
+    "01M5YV4VH2CZ5362WW213VJ70N"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Jack-O'-Lantern",
+   "items": [
+    "01M5YV6ME4M2NXBYMF8XCC8W8S"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Job Application",
+   "items": [
+    "01M5YV7SZHT616DKV3FC5M2850"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Ghost",
+   "items": [
+    "01M5YV5EGZFDE8K82NYR98CZ83"
+   ],
+   "currency": "eur",
+   "price": 499,
+   "bundle": false
+  },
+  {
+   "name": "Inspector Bundle",
+   "items": [
+    "01M506WBKV0TC3ZRJZMM99NJF1",
+    "01M5CCYTMTHPTY5MKM3YBYN3PY"
+   ],
+   "currency": "eur",
+   "price": 599,
+   "bundle": true
+  }
+ ],
+ "gift": {
+  "name": "Gift 3 Subs",
+  "start": "2026-10-21T00:00:00+00:00",
+  "end": "2026-11-20T00:00:00+00:00",
+  "recipients": 3,
+  "items": [
+   "01M5CDANMW5HWQG8NA5TRBJFZ3",
+   "01M32DMVBEA9GK53DSQ4HS16R5"
+  ]
+ }
+}

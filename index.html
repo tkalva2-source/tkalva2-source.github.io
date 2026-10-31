@@ -1,0 +1,2195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paintwatch</title>
+<!-- Set the saved (or system) theme before first paint so dark mode doesn't flash white. -->
+<script>try { var t = localStorage.getItem("pw:theme"); t = t ? JSON.parse(t) : (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); document.documentElement.dataset.theme = t; } catch (e) {}</script>
+<meta name="description" content="Look up any 7TV user's paints and badges, see upcoming paints, rank the top 50 streamers, and get notified when people unlock something new.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a paint-shop swatch catalog. Grey paper, black rules, square corners, printed labels.
+   Paints only ever sit on dark "chat" panels (#18181b), because that is what they were designed for. */
+:root {
+  --paper: #e6e7e9; --card: #ffffff; --sunk: #f3f3f4;
+  --ink: #111113; --muted: #55575f; --dim: #8b8d95; --rule: #b9bbc2; --hair: #d9dadf;
+  --chat: #18181b; --chat-2: #232327; --chat-fg: #efeff1; --chat-muted: #a5a5b0; --chat-rule: #34343b;
+  --divider: #b9bbc2; --on-ink: #ffffff; --on-yellow: #111113; --shadow: #111113; --backdrop: rgba(230, 231, 233, .82); --tint-bad: #ffe1e5; --tint-warn: #fff3d6;
+  --blue: #0b3cff; --yellow: #ffd60a; --good: #0a8f4e; --warn: #b86800; --bad: #d6203a;
+  --gold: #c99a00; --silver: #8c96a5; --bronze: #b0652d;
+  /* legacy names still used by a few inline styles */
+  --fg: var(--ink); --bg: var(--paper); --panel: var(--card); --panel-2: var(--sunk); --well: var(--chat); --line: var(--hair); --line-2: var(--rule); --accent: var(--blue); --accent-ink: #fff;
+  --label: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
+}
+/* Dark "night shift" version of the same catalog: charcoal paper, softer rules, same stickers. */
+:root[data-theme="dark"] {
+  --paper: #121214; --card: #1b1b1e; --sunk: #232327;
+  --ink: #ececef; --muted: #a2a4ad; --dim: #6f717a; --rule: #3a3b42; --hair: #2a2b30;
+  --chat: #0e0e10; --chat-2: #1f1f23; --chat-rule: #2c2c32;
+  --divider: #565863; --on-ink: #111113; --shadow: #000000; --backdrop: rgba(8, 8, 10, .8); --tint-bad: #3a1219; --tint-warn: #3a2a08;
+  --blue: #7d97ff; --good: #3ccf86; --warn: #f0a63a; --bad: #ff6b81;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--paper); }
+body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); font: 15px/1.5 var(--body); font-stretch: 100%; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--card); }
+.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+input, select, button, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+::selection { background: var(--yellow); color: var(--on-yellow); }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+a { color: var(--blue); }
+h2 { font: 800 25px/1.05 var(--label); font-stretch: 118%; text-transform: uppercase; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.eyebrow { font: 600 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 10px; }
+.note { color: var(--muted); font-size: 13.5px; margin: 0; max-width: 75ch; }
+
+/* ---------- header ---------- */
+header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--rule); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding-block: 10px; }
+/* the logo is a dark chat sticker so whatever paint it wears reads properly */
+.brand { border-radius: 6px; margin: 0; cursor: pointer; background: var(--chat); padding: 7px 12px 6px; font: 800 20px/1 var(--label); font-stretch: 125%; text-transform: uppercase; letter-spacing: .01em; color: var(--chat-fg); box-shadow: 3px 3px 0 var(--yellow); }
+.lookup { position: relative; flex: 1 1 300px; display: flex; min-width: 0; }
+.lookup input { border-radius: 10px; flex: 1; min-width: 0; background: var(--card); border: 1px solid var(--rule); border-radius: 0; padding: 9px 100px 9px 38px; }
+.lookup input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 35%, transparent); border-color: var(--blue); }
+.lookup input::placeholder { color: var(--dim); }
+.lookup > svg { position: absolute; left: 12px; top: 50%; translate: 0 -50%; width: 16px; height: 16px; color: var(--ink); pointer-events: none; }
+.lookup button[type=submit] { position: absolute; right: 2px; top: 2px; bottom: 2px; border: 0; padding: 0 16px; background: var(--ink); color: var(--on-ink); font: 700 13px var(--label); font-stretch: 112%; text-transform: uppercase; letter-spacing: .04em; }
+.lookup button[type=submit]:hover { background: var(--blue); color: #fff; }
+.suggest { border-radius: 12px; position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--card); border: 1px solid var(--rule); box-shadow: 0 16px 36px -18px rgba(0,0,0,.4); padding: 4px; display: grid; gap: 1px; z-index: 25; }
+.suggest .lbl { font: 600 10.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 8px 4px; }
+/* suggestion names are painted, so each row is a little chat strip */
+.suggest button { border-radius: 8px; display: flex; align-items: center; gap: 10px; text-align: left; background: var(--chat); color: var(--chat-fg); border: 0; padding: 7px 10px; font-weight: 700; min-width: 0; }
+.suggest button:hover, .suggest button:focus-visible { background: var(--chat-2); outline: 2px solid var(--blue); outline-offset: -2px; }
+.suggest img { width: 24px; height: 24px; border-radius: 50%; flex: none; }
+.suggest small { margin-left: auto; color: var(--chat-muted); font: 11px var(--mono); flex: none; }
+.tabs { display: flex; gap: 0; position: relative; }
+.tabs button { position: relative; background: none; border: 0; padding: 10px 12px; color: var(--muted); font: 700 13px/1 var(--label); font-stretch: 112%; text-transform: uppercase; letter-spacing: .04em; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected=true] { color: var(--ink); }
+.tabs .pill { position: absolute; bottom: -11px; height: 3px; border-radius: 3px; background: var(--ink); transition: left .25s var(--ease), width .25s var(--ease); }
+.count { border-radius: 4px; font: 600 11px/1 var(--mono); background: var(--yellow); color: var(--on-yellow); padding: 3px 5px; border: 1.5px solid var(--on-yellow); }
+.count:empty { display: none; }
+
+main { padding-block: 30px 80px; display: grid; gap: 40px; }
+main > * { min-width: 0; }
+section[data-panel] { display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; }
+section[data-panel] > * { min-width: 0; }
+.status { border-radius: 12px; display: flex; gap: 10px; align-items: center; padding: 12px 16px; background: var(--card); border: 1px solid var(--rule); font-family: var(--mono); font-size: 13.5px; }
+.status.err { background: var(--tint-warn); border-color: var(--warn); color: var(--warn); }
+.spin { width: 14px; height: 14px; border: 1px solid var(--hair); border-top-color: var(--ink); border-radius: 50%; animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { rotate: 360deg; } }
+
+/* ---------- paint text ---------- */
+/* Padding widens the painted box so descenders and italic overhangs aren't clipped; the negative margin keeps layout unchanged. */
+.paint { -webkit-background-clip: text; background-clip: text; color: transparent; background-size: 100% 100%; background-repeat: no-repeat; font-weight: 800;
+  padding: .14em .1em; margin: -.14em -.1em; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+/* Image paints are wide strips; cover the whole text box so short, tall names aren't left with bare edges. */
+.paint.img { background-size: cover; background-position: center; }
+
+.theme-btn { gap: 6px; }
+/* notification bell + dropdown of recent unlocks */
+.bellwrap { position: relative; }
+.bell-btn { position: relative; }
+.bell-btn .count { position: absolute; top: -7px; right: -7px; }
+.bellpanel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 30; width: min(360px, calc(100vw - 32px)); max-height: 440px; overflow-y: auto; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 12px; box-shadow: 0 18px 40px -16px rgba(0,0,0,.5); padding: 6px; }
+.bellpanel .bhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 8px 8px; }
+.brow { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: center; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px; color: var(--ink); font-size: 13.5px; }
+.brow:hover { background: var(--sunk); }
+.brow.unseen { background: color-mix(in srgb, var(--yellow) 18%, var(--card)); }
+.brow img, .brow .ph { width: 30px; height: 30px; border-radius: 50%; background: var(--chat-2); }
+.brow b { background: var(--chat); color: var(--chat-fg); border-radius: 5px; padding: 1px 6px; }
+.alias { color: var(--chat-muted); font-weight: 500; margin-left: 4px; }
+/* compare lineup: one card per person, "vs" between them, a dashed card to add more */
+.cmp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.cmp-head, .cmp-rows { max-width: 880px; margin-inline: auto; }
+.lineup { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 22px; padding-bottom: 22px; border-bottom: 1px solid var(--divider); }
+/* dividers inside the results: a rule between each section, faint lines between stat rows, and between paint-list columns */
+#cmpBody .enter > * + * { border-top: 1px solid var(--divider); padding-top: 20px; margin-top: 22px; }
+#cmpBody .enter > .cmp-rows { margin-top: 18px; }
+.cmp-rows { gap: 0 !important; }
+.cmp-row { padding: 9px 0; border-bottom: 1px dashed var(--divider); }
+.cmp-row:last-child { border-bottom: 0; }
+#cmpBody .cmp-cols { margin-top: 0; }
+#cmpBody .cmp-cols > * + * { border-left: 1px solid var(--divider); padding-left: 16px; }
+@media (max-width: 680px) { #cmpBody .cmp-cols > * + * { border-left: 0; padding-left: 0; border-top: 1px solid var(--divider); padding-top: 14px; } }
+.cmp-pick { position: relative; flex: 1 1 190px; max-width: 280px; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 7px 10px 7px 7px; border: 1px solid var(--rule); border-radius: 14px; background: var(--card); transition: border-color .2s, box-shadow .2s; }
+.cmp-pick:focus-within { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 30%, transparent); }
+.cmp-pick .pav { width: 34px; height: 34px; flex: none; border-radius: 50%; object-fit: cover; background: var(--chat); color: var(--chat-muted); display: grid; place-items: center; font: 600 13px var(--mono); }
+.cmp-pick input { flex: 1; min-width: 0; border: 0; background: none; padding: 6px 2px; font: 700 15px var(--body); color: var(--ink); }
+.cmp-pick input:focus { outline: none; }
+.cmp-pick .cmp-x { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--sunk); color: var(--muted); padding: 0; }
+.cmp-pick .cmp-x:hover { color: var(--bad); }
+.cmp-pick .cmp-x svg { width: 12px; height: 12px; }
+.cmp-pick .suggest { top: calc(100% + 6px); min-width: 260px; }
+.vs-tag { font: 800 12px var(--label); font-stretch: 118%; text-transform: uppercase; color: var(--on-yellow); background: var(--yellow); border-radius: 999px; padding: 4px 8px; }
+.cmp-add { display: inline-flex; align-items: center; gap: 8px; padding: 12px 16px; border: 1.5px dashed var(--dim); border-radius: 14px; background: none; color: var(--muted); font: 700 13px var(--label); font-stretch: 112%; text-transform: uppercase; letter-spacing: .03em; transition: color .2s, border-color .2s, background .2s; }
+.cmp-add:hover { color: var(--ink); border-color: var(--blue); background: color-mix(in srgb, var(--blue) 8%, transparent); }
+.cmp-add svg { width: 16px; height: 16px; }
+@media (max-width: 680px) { .cmp-pick { max-width: none; flex-basis: 100%; } .vs-tag { margin: -4px auto; } .cmp-add { width: 100%; justify-content: center; } }
+/* motion: cards slide in (rise), result rows cascade, bars and overlap grow into place */
+@media (prefers-reduced-motion: no-preference) {
+  .cmp-row, .mtable > * { animation: rise .45s var(--ease) both; animation-delay: calc(var(--i, 0) * 60ms + .1s); }
+  .cbar span { animation: grow .8s var(--ease) both .25s; }
+  .cbar.l span { transform-origin: right; }
+  .cbar.r span { transform-origin: left; }
+  .venn span { animation: grow .9s var(--ease) both .35s; transform-origin: left; }
+  .cmp-who { animation: pop .5s var(--ease) both; }
+  .cmp-list .chip, .cmp-badges > * { animation: viewIn .4s var(--ease) both .4s; }
+  .vs-tag { animation: pop .4s var(--ease) both .15s; }
+  @keyframes pop { from { opacity: 0; transform: scale(.85); } }
+}
+/* 3+ person compare: label column + one column per person */
+.mscroll { overflow-x: auto; }
+.mhead, .mtable { display: grid; grid-template-columns: minmax(96px, 150px) repeat(var(--n), minmax(84px, 1fr)); gap: 6px 10px; }
+.mhead { margin-bottom: 10px; align-items: stretch; }
+.mhead .cmp-who { border-radius: 12px; }
+.mtable > * { padding: 8px 6px; border-bottom: 1px solid var(--hair); }
+.mtable .ml { font: 11.5px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; align-self: center; }
+.mtable .mv { font: 600 16px var(--mono); text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.mtable .mv.win { color: var(--ink); }
+.mtable .mv.win::after { content: " ◆"; color: var(--good); font-size: 10px; vertical-align: 2px; }
+.brow small { display: block; color: var(--muted); font: 11.5px var(--mono); margin-top: 2px; }
+.theme-btn .in-dark { display: none; }
+:root[data-theme="dark"] .theme-btn .in-light { display: none; }
+:root[data-theme="dark"] .theme-btn .in-dark { display: block; }
+
+/* ---------- controls ---------- */
+.btn { border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--rule); background: var(--card); color: var(--ink); font: 700 13px/1 var(--label); font-stretch: 112%; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; transition: transform .12s, box-shadow .12s; }
+.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px -8px rgba(0,0,0,.45); }
+.btn:active { transform: none; box-shadow: none; }
+.btn.primary { background: var(--yellow); color: var(--on-yellow); }
+.btn.small { padding: 7px 10px; font-size: 12px; }
+.btn svg { width: 15px; height: 15px; flex: none; }
+.btn.busy svg { animation: spin .8s linear infinite; }
+.icon-btn { border-radius: 8px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--rule); background: var(--card); color: var(--ink); padding: 0; flex: none; }
+.icon-btn:hover { background: var(--sunk); }
+.icon-btn[aria-pressed=true] { background: var(--yellow); color: var(--on-yellow); }
+.icon-btn svg { width: 16px; height: 16px; }
+.field { border-radius: 8px; background: var(--card); border: 1px solid var(--rule); border-radius: 0; padding: 7px 10px; min-width: 0; }
+select.field { padding-right: 28px; }
+.seg { border-radius: 8px; overflow: hidden; display: inline-flex; border: 1px solid var(--rule); background: var(--card); }
+.seg button { background: none; border: 0; border-right: 1px solid var(--rule); padding: 6px 12px; color: var(--muted); font: 700 12px/1 var(--label); font-stretch: 112%; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--on-ink); }
+.chip { border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; font: 600 12px/1 var(--mono); padding: 5px 8px; border: 1.5px solid currentColor; background: transparent; max-width: 100%; }
+.chip svg { width: 13px; height: 13px; }
+.card { border-radius: 14px; background: var(--card); border: 1px solid var(--rule); padding: 20px; min-width: 0; }
+.empty { border-radius: 14px; border: 1.5px dashed var(--dim); padding: 24px; color: var(--muted); text-align: center; background: var(--sunk); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.toolbar h2 { margin-right: auto; }
+.linkish { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; color: inherit; }
+/* clickable name chips are tiny chat strips so painted names stay readable */
+.chip.linkish { border-radius: 999px; padding: 6px 10px; border: 0; background: var(--chat); color: var(--chat-fg); font: 700 13px/1.2 var(--body); }
+.chip.linkish:hover { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* ---------- profile: a big chat panel ---------- */
+.hero { border-radius: 18px; overflow: hidden; position: relative; border: 1px solid var(--rule); background: var(--chat); color: var(--chat-fg); isolation: isolate; box-shadow: 0 18px 40px -24px rgba(0,0,0,.45);
+  --fg: var(--chat-fg); --muted: var(--chat-muted); --line: var(--chat-rule); }
+/* a strip of the user's own paint across the top, like a swatch on a label */
+.hero::before { content: ""; display: block; height: 14px; background-image: var(--swatch, linear-gradient(90deg, var(--aura-1), var(--aura-2), var(--aura-3))); background-size: cover; background-position: center; border-bottom: 1px solid var(--rule); }
+.hero-in { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 26px; align-items: center; padding: 28px; }
+.avatar { width: 108px; height: 108px; object-fit: cover; background: var(--chat-2); border: 1px solid var(--chat-fg); display: block; border-radius: 50%; }
+.who { min-width: 0; display: grid; gap: 12px; justify-items: start; }
+.who .name { font: 800 clamp(34px, 6.4vw, 64px)/1.12 var(--label); font-stretch: 112%; letter-spacing: -0.01em; overflow-wrap: anywhere; max-width: 100%; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.hero .chip { color: var(--chat-muted); border-color: var(--chat-rule); }
+.chat { border-radius: 8px; display: block; background: #0e0e10; border-left: 3px solid var(--yellow); padding: 8px 12px; font-size: 14px; line-height: 1.6; max-width: 100%; overflow-wrap: anywhere; }
+.chat .ts { color: var(--chat-muted); font: 12px var(--mono); margin-right: 6px; }
+.chat img { width: 18px; height: 18px; vertical-align: -4px; margin-right: 4px; }
+.chat .n { font-weight: 800; }
+.hero .actions { display: flex; flex-direction: column; gap: 8px; align-self: start; }
+.hero .btn { border-color: var(--chat-fg); background: transparent; color: var(--chat-fg); }
+.hero .btn.primary { background: var(--yellow); color: var(--on-yellow); border-color: var(--yellow); }
+.hero .btn:hover { box-shadow: 0 0 0 2px var(--yellow); }
+.stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); border-top: 1px solid var(--chat-rule); background: var(--card); color: var(--ink); --fg: var(--ink); }
+.stat { padding: 14px 18px; border-right: 1.5px solid var(--hair); min-width: 0; display: grid; grid-template-rows: minmax(34px, auto) auto; align-content: start; gap: 4px; }
+.stat:last-child { border-right: 0; }
+.stat .v { font: 600 26px/34px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+.stat .v small { font-size: 15px; color: var(--muted); }
+/* the newest-paint stat sits on a chat chip so the paint reads */
+.stat .v:has(.paint) { white-space: normal; overflow: visible; line-height: 1.2; align-self: center; background: var(--chat); padding: 4px 8px; justify-self: start; }
+.stat .v .paint { font: 800 19px/1.2 var(--label); overflow-wrap: anywhere; }
+.stat .k { color: var(--muted); font: 12px/1.35 var(--mono); display: flex; align-items: flex-start; gap: 6px; }
+.ring { --p: 0; flex: none; width: 12px; height: 12px; margin-top: 2px; border-radius: 50%; background: conic-gradient(var(--ink) calc(var(--p) * 1%), var(--hair) 0); }
+
+.skel { background: repeating-linear-gradient(90deg, var(--sunk) 0 12px, var(--hair) 12px 13px); animation: skel 1s linear infinite; }
+@keyframes skel { to { background-position: 26px 0; } }
+
+/* ---------- profile sections ---------- */
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.stack { border-radius: 6px; overflow: hidden; display: flex; height: 18px; border: 1px solid var(--rule); background: var(--sunk); }
+.stack div { transform-origin: left; border-right: 1px solid var(--rule); }
+.stack div:last-child { border-right: 0; }
+.srcs { display: grid; gap: 10px; margin-top: 18px; }
+.src { display: grid; grid-template-columns: 110px minmax(0, 1fr) 44px 40px; gap: 12px; align-items: center; font-size: 13.5px; }
+.src i { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--rule); margin-right: 8px; }
+.src .bar { border-radius: 4px; overflow: hidden; height: 10px; background: var(--sunk); border: 1px solid var(--rule); }
+.src .bar span { display: block; height: 100%; transform-origin: left; }
+.src .mono { text-align: right; font-size: 12.5px; }
+/* year chart: each bar is a stack of thin slices of the actual paints added that year */
+.years { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 12px; height: 200px; margin-top: 8px; }
+.ycol { display: flex; flex-direction: column; align-items: center; min-width: 0; height: 100%; }
+.ycol .yn { font: 600 12.5px var(--mono); margin-bottom: 6px; }
+.ytrack { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; border-bottom: 1px solid var(--rule); }
+.ybar { width: min(100%, 52px); display: flex; flex-direction: column-reverse; border-radius: 8px 8px 2px 2px; overflow: hidden; background: var(--chat); transform-origin: bottom; box-shadow: 0 10px 20px -14px rgba(0,0,0,.6); }
+.ybar i { flex: 1 1 0; min-height: 0; }
+.ycol .yl { font: 11.5px var(--mono); color: var(--muted); margin-top: 6px; }
+.outfits { display: grid; }
+.outfit > :first-child { white-space: nowrap; }
+.outfit { display: grid; grid-template-columns: max-content 56px minmax(0, 1fr) minmax(0, auto); gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1.5px solid var(--hair); font-size: 14px; }
+.outfit:last-child { border-bottom: 0; }
+.outfit b { border-radius: 6px; font-size: 17px; overflow-wrap: anywhere; min-width: 0; background: var(--chat); color: var(--chat-fg); padding: 3px 8px; justify-self: start; }
+.outfit img { width: 22px; height: 22px; vertical-align: -5px; margin-right: 6px; }
+.outfit .tn { color: var(--muted); text-align: right; overflow-wrap: anywhere; font: 12px var(--mono); }
+
+/* ---------- paint chips (cards) ---------- */
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+.item { border-radius: 12px; position: relative; display: grid; grid-template-rows: auto auto 1fr; text-align: left; background: var(--card); border: 1px solid var(--rule); padding: 0; min-width: 0; color: var(--ink); transition: transform .14s var(--ease), box-shadow .14s var(--ease); }
+.item:hover { transform: translateY(-4px); box-shadow: 0 16px 30px -18px rgba(0,0,0,.5); }
+.item.on { box-shadow: 0 0 0 3px var(--yellow); }
+/* the swatch: the paint itself as a solid block */
+.item .swatch { height: 64px; background-color: var(--chat); background-size: cover; background-position: center; border-bottom: 1px solid var(--rule); }
+/* the chat strip: the paint on a name, as it looks in chat */
+.item .well { background: var(--chat); color: var(--chat-fg); padding: 10px 10px; min-height: 52px; display: flex; align-items: center; justify-content: center; text-align: center; font: 800 19px/1.15 var(--label); font-stretch: 100%; overflow-wrap: anywhere; border-bottom: 1px solid var(--rule); }
+.item .well img { width: 44px; height: 44px; }
+.item.badge .well { min-height: 96px; }
+.item .meta { display: grid; gap: 2px; font: 11px/1.4 var(--mono); color: var(--muted); padding: 9px 10px 10px; align-content: start; }
+.item .meta b { color: var(--ink); font: 800 14px/1.2 var(--label); font-stretch: 112%; text-transform: uppercase; overflow-wrap: anywhere; letter-spacing: .01em; }
+.item .meta .src1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.item .meta .row2 { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.wear { color: var(--good); white-space: nowrap; font-weight: 600; }
+.flag { border-radius: 4px; position: absolute; top: 8px; right: 8px; z-index: 1; font: 700 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px; background: #fff; color: #111113; border: 1.5px solid #111113; }
+.flag.eq { background: #111113; color: #fff; }
+.flag.soon { border-style: dashed; }
+.flag.now { background: var(--yellow); }
+.flag.first { background: var(--gold); color: #fff; }
+.flag.own { background: #0b3cff; color: #fff; }
+.flag.out { background: #e6e7e9; color: #55575f; }
+.flag.inline { position: static; vertical-align: 4px; margin-left: 8px; }
+.more { justify-self: center; }
+.sentinel { height: 1px; }
+.upcoming { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 14px; overflow-x: auto; padding: 2px 8px 12px 2px; scroll-snap-type: x proximity; }
+.upcoming .item { scroll-snap-align: start; }
+.upcoming .item .swatch { height: 84px; }
+
+/* ---------- paints page ---------- */
+.cat-search { position: relative; }
+.cat-search input { border-radius: 14px; width: 100%; background: var(--card); border: 1px solid var(--rule); padding: 16px 170px 16px 50px; font: 600 18px var(--body); }
+.cat-random { position: absolute; right: 8px; top: 50%; translate: 0 -50%; }
+.cat-random:hover { translate: 0 calc(-50% - 1px); transform: none; }
+@media (max-width: 680px) { .cat-search input { padding-right: 60px; } .cat-random span { display: none; } }
+.cat-search input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 35%, transparent); border-color: var(--blue); }
+.cat-search > svg { position: absolute; left: 18px; top: 50%; translate: 0 -50%; width: 20px; height: 20px; color: var(--ink); }
+
+/* ---------- tracking ---------- */
+.people { display: flex; gap: 8px; overflow-x: auto; padding: 2px 4px 10px 2px; }
+.person { border-radius: 999px; display: inline-flex; align-items: center; gap: 8px; flex: none; background: var(--chat); color: var(--chat-fg); border: 1px solid var(--rule); padding: 4px 12px 4px 4px; font-weight: 800; }
+.person img, .person .ph { width: 28px; height: 28px; border-radius: 50%; flex: none; background: var(--chat-2); display: grid; place-items: center; color: var(--chat-muted); }
+.person .ph svg { width: 15px; height: 15px; }
+.person span.t { white-space: nowrap; padding-block: 2px; }
+.person[aria-pressed=true] { box-shadow: 0 0 0 2px var(--yellow); }
+.person .dotn { width: 8px; height: 8px; background: var(--yellow); flex: none; }
+.track-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.track-layout.wide { grid-template-columns: minmax(0, 1fr); }
+.track-layout.wide .track-side { display: none; }
+.track-side { display: grid; gap: 20px; min-width: 0; }
+.phead { border-radius: 13px 13px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; background: var(--chat); color: var(--chat-fg); padding: 14px; margin: -20px -20px 0; border-bottom: 1px solid var(--rule); }
+.phead img.av { width: 60px; height: 60px; object-fit: cover; border-radius: 50%; background: var(--chat-2); }
+.phead .nm { font: 800 28px/1.1 var(--label); overflow-wrap: anywhere; }
+.phead .sub { color: var(--chat-muted); font: 12px/1.5 var(--mono); }
+.phead .ctl { display: flex; gap: 6px; }
+.phead .btn, .phead .icon-btn { background: transparent; color: var(--chat-fg); border-color: var(--chat-fg); }
+.timeline { position: relative; display: grid; margin-top: 4px; }
+.timeline::before { content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px; width: 2px; background: var(--rule); }
+.tl { position: relative; display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 14px; padding: 10px 0; }
+.tl .dot { border-radius: 50%; position: relative; z-index: 1; width: 32px; height: 32px; display: grid; place-items: center; background: var(--card); color: var(--ink); border: 1px solid var(--rule); }
+.tl.gain .dot { background: var(--yellow); color: var(--on-yellow); }
+.tl.loss .dot { background: var(--tint-bad); color: var(--bad); }
+.tl.start .dot { background: var(--ink); color: var(--on-ink); }
+.tl .dot svg { width: 15px; height: 15px; }
+.tl .what { min-width: 0; overflow-wrap: anywhere; padding-top: 4px; }
+.tl .what b { font-size: 17px; background: var(--chat); color: var(--chat-fg); padding: 1px 6px; }
+.tl .what img.bi { width: 20px; height: 20px; vertical-align: -4px; margin-right: 4px; }
+.tl .when { font: 12px/1.5 var(--mono); color: var(--muted); margin-top: 4px; }
+.tl .when .exact { color: var(--good); font-weight: 600; }
+.tl.unseen .what > :first-child::after { content: "new"; font: 700 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 3px 5px; background: var(--yellow); border: 1.5px solid #111113; color: #111113; margin-left: 8px; vertical-align: 2px; }
+.wl { display: grid; gap: 6px; }
+.wrow { border-radius: 10px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--chat); color: var(--chat-fg); padding: 8px 10px; }
+.wrow img.av { width: 30px; height: 30px; border-radius: 50%; background: var(--chat-2); }
+.wrow .n { font: 800 16px/1.2 var(--label); min-width: 0; overflow-wrap: anywhere; background: none; border: 0; padding: 0; text-align: left; color: var(--chat-fg); }
+.wrow .sub { font: 11px var(--mono); color: var(--chat-muted); }
+.wrow .ctl { display: flex; gap: 4px; }
+.wrow .icon-btn { width: 30px; height: 30px; background: transparent; color: var(--chat-fg); border-color: var(--chat-rule); }
+.wrow .icon-btn[aria-pressed=true] { background: var(--yellow); color: var(--on-yellow); border-color: var(--yellow); }
+.settings { display: grid; gap: 14px; }
+.srow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.srow .t { font-weight: 700; }
+.srow .d { font-size: 13px; color: var(--muted); }
+.switch { border-radius: 999px; appearance: none; -webkit-appearance: none; width: 44px; height: 24px; border: 1px solid var(--rule); background: var(--card); position: relative; flex: none; cursor: pointer; margin: 0; }
+.switch::after { border-radius: 50%; content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--ink); transition: left .15s var(--ease); }
+.switch:checked { background: var(--yellow); }
+.switch:checked::after { background: #111113; }
+.switch:checked::after { left: 22px; }
+.settings input[type=url], .settings select { border-radius: 8px; width: 100%; min-width: 0; background: var(--card); border: 1px solid var(--rule); padding: 8px 10px; }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+
+/* ---------- compare ---------- */
+.cmp-head { border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 0; align-items: stretch; margin-bottom: 18px; border: 1px solid var(--rule); }
+.cmp-who { display: grid; justify-items: center; gap: 6px; text-align: center; min-width: 0; background: var(--chat); color: var(--chat-fg); padding: 14px 8px; }
+.cmp-who img, .cmp-who .ph { width: 60px; height: 60px; border-radius: 50%; object-fit: cover; background: var(--chat-2); }
+.cmp-who .nm { font: 800 22px/1.15 var(--label); overflow-wrap: anywhere; max-width: 100%; color: var(--chat-fg); }
+.cmp-who .muted { color: var(--chat-muted); }
+.cmp-head .vs { display: grid; place-items: center; padding: 0 12px; background: var(--yellow); color: var(--on-yellow); font: 800 16px var(--label); font-stretch: 125%; border-inline: 1px solid var(--rule); }
+.cmp-rows { display: grid; gap: 8px; }
+.cmp-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 150px minmax(0, 1fr) 52px; gap: 10px; align-items: center; }
+.cmp-row .cv { font: 600 16px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); }
+.cmp-row .cv.l { text-align: right; } .cmp-row .cv.win { color: var(--ink); font-weight: 700; }
+.cmp-row .cv.win::after { content: " ◆"; color: var(--good); font-size: 10px; vertical-align: 2px; }
+.cmp-row .cv.l.win::after { content: ""; } .cmp-row .cv.l.win::before { content: "◆ "; color: var(--good); font-size: 10px; vertical-align: 2px; }
+.cmp-row .cl { text-align: center; font: 11.5px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.cbar { border-radius: 4px; overflow: hidden; height: 12px; background: var(--sunk); border: 1px solid var(--rule); display: flex; }
+.cbar.l { justify-content: flex-end; }
+.cbar span { display: block; height: 100%; background: var(--ink); }
+.cbar.r span { background: var(--blue); }
+.cmp-row:not(:has(.cbar)) .cl { grid-column: 2 / 5; }
+.venn { border-radius: 6px; overflow: hidden; display: flex; height: 18px; border: 1px solid var(--rule); }
+.venn span + span { border-left: 1px solid var(--rule); }
+.venn .va, .venn-key .va { background: var(--ink); } .venn .vs2, .venn-key .vs2 { background: var(--yellow); } .venn .vb, .venn-key .vb { background: var(--blue); }
+.venn-key { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+.venn .va, .venn-key .va { background: var(--ink); }
+.venn-key i { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--rule); margin-right: 6px; }
+.venn-key b { color: var(--ink); }
+.cmp-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 22px; }
+.cmp-list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 260px; overflow-y: auto; padding: 2px; align-content: flex-start; }
+.cmp-badges { border-radius: 8px; display: flex; flex-wrap: wrap; gap: 6px; background: var(--chat); padding: 6px; }
+.cmp-badges img { width: 28px; height: 28px; display: block; }
+
+/* ---------- accents: section headings carry a stripe of this visit's logo paint ---------- */
+section h2::after { content: ""; display: block; width: 52px; height: 6px; margin-top: 7px; border-radius: 3px; background-image: var(--stripe, linear-gradient(90deg, var(--yellow), var(--blue))); background-size: cover; }
+.hh-title::after, .card h2::after { display: none; }
+
+/* ---------- subscription card ---------- */
+.subcard { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, .8fr) minmax(0, 1fr); border: 1px solid var(--rule); border-radius: 14px; overflow: hidden; background: var(--card); }
+.subcard > * { padding: 18px 20px; min-width: 0; }
+.subcard > * + * { border-left: 1px solid var(--hair); }
+.sub-main { display: grid; gap: 6px; align-content: center; background: linear-gradient(90deg, color-mix(in srgb, var(--yellow) 22%, var(--card)), var(--card) 70%); }
+.sub-big { font: 800 clamp(24px, 3.4vw, 34px)/1.05 var(--label); font-stretch: 112%; text-transform: uppercase; }
+.sub-big b { font-weight: 800; }
+.sub-stat { display: grid; gap: 4px; align-content: center; }
+.sub-stat b { font-size: 28px; }
+.sub-stat span, .sub-next > span { color: var(--muted); font-size: 13px; }
+.sub-next { display: grid; gap: 8px; align-content: center; justify-items: start; }
+.sub-badges { display: flex; align-items: center; gap: 10px; background: var(--chat); border-radius: 10px; padding: 8px 12px; }
+.sub-badges img { width: 32px; height: 32px; }
+.sub-arrow { width: 26px; height: 2px; background: var(--chat-muted); position: relative; }
+.sub-arrow::after { content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--chat-muted); border-right: 0; }
+
+/* ---------- paint wall + catalog mosaic: every paint as a little swatch ---------- */
+.wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 4px; }
+.wcell { aspect-ratio: 1; border: 0; border-radius: 5px; padding: 0; background-color: var(--chat); box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); transition: transform .15s var(--ease); }
+.wcell:hover { transform: scale(1.35); z-index: 2; position: relative; box-shadow: 0 6px 14px -4px rgba(0,0,0,.5); }
+.wcell.on { outline: 2px solid var(--yellow); outline-offset: 1px; }
+.mosaic { position: relative; border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; display: grid; grid-template-columns: repeat(auto-fill, minmax(16px, 1fr)); gap: 2px; padding: 2px; background: var(--chat); max-height: 220px; }
+.mosaic i { aspect-ratio: 1; border-radius: 3px; background-color: var(--chat-2); }
+.mosaic-title { position: absolute; left: 20px; bottom: 20px; background: var(--card); color: var(--ink); border-radius: 12px; padding: 14px 18px; box-shadow: 0 16px 36px -14px rgba(0,0,0,.6); }
+.mosaic-title b { display: block; font: 800 clamp(28px, 5vw, 46px)/1 var(--label); font-stretch: 118%; text-transform: uppercase; }
+.mosaic-title span { font: 12px var(--mono); color: var(--muted); }
+
+/* ---------- home ---------- */
+.home-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 32px; align-items: center; min-height: 440px; }
+.hh-copy { display: grid; gap: 18px; justify-items: start; }
+.hh-title { margin: 0; font: 800 clamp(40px, 6.6vw, 84px)/.98 var(--label); font-stretch: 118%; text-transform: uppercase; letter-spacing: -0.02em; text-wrap: balance; }
+/* "your name" is painted, on a chat chip so any paint reads */
+.hh-title #heroWord { display: inline-block; background: var(--chat); padding: .02em .16em .08em; border-radius: .14em; text-transform: none; letter-spacing: -0.01em; }
+.hh-lede { margin: 0; font-size: 17px; color: var(--muted); max-width: 46ch; }
+.home-lookup { display: flex; gap: 8px; width: min(100%, 460px); }
+.home-lookup input { flex: 1; min-width: 0; border: 1px solid var(--rule); border-radius: 10px; background: var(--card); padding: 12px 14px; font-size: 16px; }
+.home-lookup input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 35%, transparent); }
+.hh-stats { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 12.5px var(--mono); color: var(--muted); }
+.hh-stats b { color: var(--ink); font-size: 15px; }
+/* the deck: paint chips fanned out from one corner, like a swatch book */
+.deck-wrap { position: relative; display: grid; justify-items: center; }
+.deck { position: relative; width: 100%; height: 400px; }
+.deck-card { position: absolute; left: 50%; bottom: 20px; width: 170px; margin-left: -85px; display: grid; grid-template-rows: 150px auto auto; text-align: left; padding: 0; border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--card); color: var(--ink);
+  transform-origin: 50% 120%; transform: rotate(var(--r)) translateY(0); box-shadow: 0 18px 30px -20px rgba(0,0,0,.55); transition: transform .45s var(--ease); }
+.deck-card .swatch { display: block; background-color: var(--chat); }
+.deck-card .well { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px; background: var(--chat); color: var(--chat-fg); font: 800 17px/1.15 var(--label); text-align: center; overflow-wrap: anywhere; }
+.deck-card .lbl { padding: 8px 10px 10px; font: 800 12.5px/1.2 var(--label); font-stretch: 112%; text-transform: uppercase; overflow-wrap: anywhere; }
+.deck:hover .deck-card { transform: rotate(calc(var(--r) * 1.35)) translateY(-6px); }
+.deck .deck-card:hover { transform: rotate(0deg) translateY(-40px) scale(1.04); z-index: 9; }
+.deck-shuffle { margin-top: 4px; }
+.tryit { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); border: 1px solid var(--rule); border-radius: 18px; overflow: hidden; background: var(--card); }
+.tryit-show { display: grid; place-items: center; min-height: 220px; padding: 30px 24px; background: var(--chat); color: var(--chat-fg); text-align: center; font: 800 clamp(38px, 7vw, 80px)/1.1 var(--label); overflow-wrap: anywhere; }
+.tryit-ctl { display: grid; gap: 12px; align-content: center; padding: 24px; }
+.tryit-ctl .field { font-size: 16px; padding: 11px 13px; border-radius: 10px; }
+.tryit-meta { display: grid; gap: 2px; }
+.tryit-meta b { font: 800 18px var(--label); font-stretch: 112%; text-transform: uppercase; }
+.tryit-meta span { font: 12.5px var(--mono); }
+.tryit-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-cols { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.worn { display: grid; gap: 6px; }
+.worn-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(60px, 34%) 56px; gap: 10px; align-items: center; width: 100%; padding: 0; border: 0; background: none; text-align: left; color: var(--ink); }
+.worn-row .rk { font: 600 12px var(--mono); color: var(--muted); text-align: right; }
+.worn-row .nm { background: var(--chat); color: var(--chat-fg); border-radius: 6px; padding: 5px 10px; font: 800 15px/1.2 var(--label); overflow-wrap: anywhere; justify-self: start; }
+.worn-row .wbar { height: 8px; border-radius: 4px; background: var(--sunk); overflow: hidden; }
+.worn-row .wbar span { display: block; height: 100%; background: var(--good); border-radius: 4px; transform-origin: left; }
+.worn-row .n { font: 600 13px var(--mono); text-align: right; }
+.worn-row:hover .nm { outline: 2px solid var(--blue); outline-offset: 1px; }
+
+/* ---------- toasts + dialog ---------- */
+.toasts { position: fixed; z-index: 40; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; width: min(360px, calc(100vw - 32px)); }
+.toast { border-radius: 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 12px; align-items: center; background: var(--chat); color: var(--chat-fg); border: 1px solid var(--rule); box-shadow: 0 16px 34px -14px rgba(0,0,0,.6); padding: 12px 14px; cursor: pointer; }
+.toast.solo { grid-template-columns: minmax(0, 1fr); }
+.toast .muted { color: var(--chat-muted); }
+.toast img { width: 36px; height: 36px; border-radius: 50%; }
+.toast b { font-size: 17px; }
+dialog { border-radius: 18px; overflow: hidden; background: var(--card); color: var(--ink); border: 1px solid var(--rule); border-radius: 0; padding: 0; width: min(560px, calc(100vw - 32px)); box-shadow: 0 30px 70px -24px rgba(0,0,0,.55); }
+dialog::backdrop { background: var(--backdrop); }
+.dlg-top { background: var(--chat); color: var(--chat-fg); padding: 44px 24px 40px; text-align: center; font: 800 clamp(34px, 8vw, 54px)/1.12 var(--label); overflow-wrap: anywhere; position: relative; border-bottom: 1px solid var(--rule); }
+.dlg-top img { width: 96px; height: 96px; }
+.dlg-swatch { height: 18px; background-size: cover; background-position: center; border-bottom: 1px solid var(--rule); }
+.dlg-body { padding: 20px 24px 24px; display: grid; gap: 16px; }
+.dlg-close { position: absolute; top: 12px; right: 12px; background: var(--chat); color: var(--chat-fg); border-color: var(--chat-fg); }
+.dlg-close:hover { background: var(--chat-2); }
+.try { display: grid; gap: 6px; }
+.try label { font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.try input { border-radius: 10px; border: 1px solid var(--rule); background: var(--card); padding: 10px 12px; }
+.try input:focus { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 35%, transparent); border-color: var(--blue); }
+.dstats { border-radius: 10px; overflow: hidden; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0; border: 1px solid var(--rule); margin-bottom: 8px; }
+.dstats > div { padding: 10px 12px; display: grid; gap: 2px; border-right: 1.5px solid var(--hair); }
+.dstats > div:last-child { border-right: 0; }
+.dstats b { font-size: 22px; }
+.dstats span { font: 12px var(--mono); color: var(--muted); }
+.how { display: grid; gap: 7px; }
+.howrow { display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 10px; align-items: baseline; font-size: 14.5px; }
+.howrow .dot { width: 10px; height: 10px; border: 1px solid var(--rule); background: var(--card); }
+.howrow.now .dot { background: var(--yellow); }
+.wearline { border-radius: 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: baseline; border: 1px solid var(--rule); border-left-width: 8px; border-left-color: var(--good); padding: 10px 14px; font-size: 15px; }
+.wearline b { font-size: 20px; color: var(--good); }
+details.est { border-top: 1px solid var(--rule); padding-top: 12px; }
+details.est summary { cursor: pointer; font: 600 11px/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); list-style: none; }
+details.est summary::before { content: "+ "; } details.est[open] summary::before { content: "− "; }
+details.est[open] > * + * { margin-top: 10px; }
+
+/* ---------- footer ---------- */
+footer { border-top: 1px solid var(--rule); margin-top: 28px; background: var(--card); color: var(--muted); font-size: 13.5px; }
+footer::before { content: ""; display: block; height: 4px; background-image: var(--stripe, linear-gradient(90deg, var(--yellow), var(--blue))); background-size: cover; }
+.foot { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 28px 36px; padding-block: 34px 26px; }
+.foot p { margin: 0; line-height: 1.55; }
+.foot-about { display: grid; gap: 12px; align-content: start; }
+.foot .paint-word { font: 800 20px var(--label); font-stretch: 125%; text-transform: uppercase; color: var(--ink); }
+.foot h3 { margin: 0 0 12px; font: 600 11px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+.foot-col { display: grid; gap: 8px; align-content: start; justify-items: start; }
+.foot-col .linkish, .foot-col > a { color: var(--muted); text-decoration: none; font-size: 13.5px; }
+.foot-col .linkish:hover, .foot-col > a:hover, .foot-thanks a:hover { color: var(--ink); }
+.foot-thanks ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.foot-thanks li { line-height: 1.5; }
+.foot-thanks a { color: var(--ink); font-weight: 700; text-decoration: underline; text-decoration-color: var(--divider); text-underline-offset: 3px; }
+#footPaint { font: 12.5px var(--mono); }
+#footPaint .linkish { background: var(--chat); padding: 2px 8px; border-radius: 6px; }
+#footPaint .paint { font: 800 14px var(--label); }
+.foot-base { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 24px; padding-block: 16px 26px; border-top: 1px solid var(--divider); font: 12px var(--mono); }
+@media (max-width: 960px) { .foot { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .foot { grid-template-columns: minmax(0, 1fr); gap: 24px; } .foot-base { flex-direction: column; align-items: flex-start; } }
+
+/* ---------- motion: quick and mechanical, like flipping through a swatch book ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .enter { animation: viewIn .3s var(--ease) both; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } }
+  .rise { animation: rise .35s var(--ease) both; animation-delay: calc(min(var(--i, 0), 24) * 18ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  .hero.enter .name { animation: nameIn .5s var(--ease) both .05s; }
+  @keyframes nameIn { from { opacity: 0; clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  .stack div, .src .bar span { animation: grow .6s var(--ease) both .15s; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .ybar { animation: growY .6s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms + .1s); }
+  @keyframes growY { from { transform: scaleY(0); } }
+  .toast { animation: slideIn .25s var(--ease); }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } }
+  dialog[open] { animation: viewIn .2s var(--ease); }
+  .live-dot { animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .brand .paint { animation: brandIn .6s var(--ease) both; }
+  @keyframes brandIn { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+}
+
+@media (max-width: 960px) {
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat:nth-child(3n) { border-right: 0; }
+  .stat:nth-child(-n+3) { border-bottom: 1.5px solid var(--hair); }
+  .track-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 680px) {
+  .bar { gap: 8px; }
+  /* phones: logo and the light/dark switch share the first row */
+  .bellwrap { order: 1; margin-left: auto; }
+  .theme-btn { order: 1; }
+  .lookup { order: 2; flex-basis: 100%; }
+  .tabs { order: 3; }
+  .tabs { overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .tabs .pill { bottom: 0; }
+  
+  .hero-in { grid-template-columns: auto minmax(0, 1fr); padding: 18px; gap: 14px; }
+  .avatar { width: 68px; height: 68px; }
+  .hero .actions { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat { border-right: 1.5px solid var(--hair) !important; border-bottom: 1.5px solid var(--hair); padding: 12px 14px; }
+  .stat:nth-child(2n) { border-right: 0 !important; }
+  .stat:nth-last-child(-n+2) { border-bottom: 0; }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .item .well { font-size: 16px; }
+  .outfit { grid-template-columns: max-content minmax(0, 1fr); }
+  .outfit > :nth-child(2), .outfit > :nth-child(4) { display: none; }
+  .phead { grid-template-columns: auto minmax(0, 1fr); }
+  .phead .ctl { grid-column: 1 / -1; }
+  .phead .nm { font-size: 22px; }
+  .cmp-row { grid-template-columns: 40px minmax(0, 1fr) 90px minmax(0, 1fr) 40px; gap: 6px; }
+  .cmp-row .cl { font-size: 10px; }
+  .cmp-cols { grid-template-columns: minmax(0, 1fr); }
+  .cmp-who .nm { font-size: 17px; }
+  .cmp-who img, .cmp-who .ph { width: 44px; height: 44px; }
+  .src { grid-template-columns: 96px minmax(0, 1fr) 36px 34px; gap: 8px; }
+  .home-hero { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 8px; }
+  .subcard { grid-template-columns: minmax(0, 1fr); }
+  .subcard > * + * { border-left: 0; border-top: 1px solid var(--hair); }
+  .wall { grid-template-columns: repeat(auto-fill, minmax(22px, 1fr)); gap: 3px; }
+  .mosaic { max-height: 170px; grid-template-columns: repeat(auto-fill, minmax(12px, 1fr)); }
+  .mosaic-title { left: 12px; bottom: 12px; padding: 10px 14px; }
+  .deck { height: 330px; }
+  .deck-card { width: 140px; margin-left: -70px; grid-template-rows: 120px auto auto; }
+  .tryit { grid-template-columns: minmax(0, 1fr); }
+  .tryit-show { min-height: 160px; }
+  .home-cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 960px) and (min-width: 681px) {
+  .home-hero { grid-template-columns: minmax(0, 1fr); }
+  .home-cols { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .deck-card { animation: dealIn .6s var(--ease) both; animation-delay: calc(var(--i) * 60ms); }
+  @keyframes dealIn { from { opacity: 0; transform: rotate(0deg) translateY(60px); } }
+  .worn-row .wbar span { animation: grow .7s var(--ease) both; animation-delay: calc(var(--i, 0) * 50ms); }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15zM10 20a2 2 0 0 0 4 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-bell-off" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 9.5-4.9M18 11v5l1.5 2H8M10 20a2 2 0 0 0 4 0M4 4l16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h12l-3-3M17 17H5l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4h11l-2 4 2 4H5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+</svg>
+
+<header>
+  <div class="wrap bar">
+    <h1 class="brand" id="brand" title="Paintwatch"><span id="brandPaint">Paintwatch</span></h1>
+    <form class="lookup" id="lookupForm" autocomplete="off">
+      <svg><use href="#i-search"/></svg>
+      <label for="q" hidden>Look up a 7TV user</label>
+      <input type="search" id="q" placeholder="Twitch name, @name, or a twitch.tv / 7tv.app link" enterkeyhint="search" spellcheck="false">
+      <button type="submit">Look up</button>
+      <div class="suggest" id="suggest" hidden></div>
+    </form>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Views">
+      <span class="pill" id="tabPill"></span>
+      <button role="tab" data-view="profile" aria-selected="true">Profile</button>
+      <button role="tab" data-view="watch" aria-selected="false">Tracking</button>
+      <button role="tab" data-view="catalog" aria-selected="false">Paints</button>
+    </nav>
+    <div class="bellwrap">
+      <button class="icon-btn bell-btn" id="bellBtn" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="bellPanel" title="Notifications"><svg><use href="#i-bell"/></svg><span class="count" id="unseenCount"></span></button>
+      <div class="bellpanel" id="bellPanel" hidden></div>
+    </div>
+    <button class="btn small theme-btn" id="themeBtn" type="button" aria-pressed="false" title="Switch between light and dark">
+      <svg class="in-light"><use href="#i-moon"/></svg><svg class="in-dark"><use href="#i-sun"/></svg><span>Dark</span>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+<main>
+  <div class="status" id="status" role="status"><span class="spin"></span><span>Loading every 7TV paint and badge…</span></div>
+
+  <section id="view-home" data-panel="home" hidden>
+    <div class="home-hero">
+      <div class="hh-copy">
+        <p class="eyebrow" id="hhKicker">7TV paints &amp; badges</p>
+        <h1 class="hh-title">Every 7TV paint, on <span id="heroWord">your name</span>.</h1>
+        <p class="hh-lede">Look up anyone's collection, find out how to get any paint, and get a ping when the people you follow unlock something new.</p>
+        <form class="home-lookup" id="homeLookup" autocomplete="off">
+          <label for="homeQ" hidden>Look up a 7TV user</label>
+          <input id="homeQ" placeholder="Look up a Twitch or Kick name" spellcheck="false">
+          <button class="btn primary" type="submit">Look up</button>
+        </form>
+        <div class="hh-stats" id="hhStats"></div>
+      </div>
+      <div class="deck-wrap">
+        <div class="deck" id="deck" aria-label="A shuffled deck of paints"></div>
+        <button class="btn small deck-shuffle" id="deckShuffle" type="button"><svg><use href="#i-refresh"/></svg>Shuffle</button>
+      </div>
+    </div>
+
+    <div class="tryit">
+      <div class="tryit-show" id="tryShow">your name</div>
+      <div class="tryit-ctl">
+        <p class="eyebrow" style="margin:0">Try a paint on your name</p>
+        <label for="homeTry" hidden>Your name</label>
+        <input id="homeTry" class="field" maxlength="25" placeholder="Type your name" spellcheck="false" autocomplete="off">
+        <div class="tryit-meta"><b id="tryPaintName"></b><span id="tryHow" class="muted"></span></div>
+        <div class="tryit-btns">
+          <button class="btn small" id="tryNext" type="button"><svg><use href="#i-refresh"/></svg>Another paint</button>
+          <button class="btn small" id="tryOpen" type="button">See this paint</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="homeNowWrap">
+      <div class="toolbar" style="margin-bottom:12px"><h2>Get it now</h2><button class="btn small" type="button" data-go="catalog">All paints</button></div>
+      <div class="upcoming" id="homeNow"></div>
+    </div>
+
+    <div class="home-cols">
+      <div class="card">
+        <div class="toolbar" style="margin-bottom:14px"><h2 style="font-size:20px">Most worn right now</h2></div>
+        <div class="worn" id="homeWorn"></div>
+        <p class="note" style="font-size:12px;margin-top:12px" id="homeWornNote"></p>
+      </div>
+      <div class="card">
+        <div class="toolbar" style="margin-bottom:14px"><h2 style="font-size:20px">Track your friends</h2></div>
+        <p class="note" style="margin-bottom:14px">Add anyone to Tracking and Paintwatch tells you the moment they unlock a new paint or badge: in the page, with a sound, or as a desktop notification.</p>
+        <div class="chips" id="homeTracked" style="margin-bottom:14px"></div>
+        <button class="btn" type="button" data-go="watch">Open Tracking</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="toolbar" style="margin-bottom:12px"><h2>Fresh drops</h2><button class="btn small" type="button" data-go="catalog">All paints</button></div>
+      <div class="upcoming" id="homeFresh"></div>
+    </div>
+  </section>
+
+  <section id="view-profile" data-panel="profile" hidden></section>
+
+  <section id="view-watch" data-panel="watch" hidden>
+    <div class="toolbar">
+      <h2>Tracking</h2>
+      <span class="muted mono" id="watchStatus" style="font-size:12.5px"></span>
+      <button class="btn small" id="checkAll" type="button"><svg><use href="#i-refresh"/></svg>Check now</button>
+    </div>
+    <div class="people" id="people" role="group" aria-label="Choose whose activity to see"></div>
+    <div class="track-layout">
+      <div class="card" id="trackMain" style="min-width:0"></div>
+      <div class="track-side">
+        <div class="card">
+          <p class="eyebrow">People you track</p>
+          <div class="wl" id="watchList"></div>
+          <form id="bulkForm" style="display:flex;gap:8px;margin-top:12px">
+            <label for="bulk" hidden>Add people to track</label>
+            <input class="field" id="bulk" placeholder="Add names, separated by commas" style="flex:1">
+            <button class="btn small" type="submit"><svg><use href="#i-plus"/></svg>Track</button>
+          </form>
+        </div>
+        <div class="card" id="alwaysOn"></div>
+        <div class="card settings">
+          <p class="eyebrow" style="margin:0">Notifications in this browser</p>
+          <div class="srow"><div><div class="t">Desktop notifications</div><div class="d" id="permNote">A system popup for each unlock.</div></div><input type="checkbox" class="switch" id="setDesktop" aria-label="Desktop notifications"></div>
+          <div class="srow"><div><div class="t">Sound</div><div class="d">A short chime when something new shows up.</div></div><input type="checkbox" class="switch" id="setSound" aria-label="Sound"></div>
+          <div class="srow"><div><div class="t">Also notify on equips</div><div class="d">When someone switches the paint or badge they wear.</div></div><input type="checkbox" class="switch" id="setEquip" aria-label="Notify on equips"></div>
+          <div class="srow"><div><div class="t">Check every</div><div class="d">While this page is open.</div></div>
+            <label for="setInterval" hidden>Check interval</label>
+            <select id="setInterval" style="width:auto"><option value="2">2 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="30">30 min</option></select></div>
+          <button class="btn small" id="testNotify" type="button" style="justify-self:start">Send a test notification</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-catalog" data-panel="catalog" hidden>
+    <div class="mosaic" id="catMosaic" aria-hidden="true"></div>
+    <div class="cat-search">
+      <svg><use href="#i-search"/></svg>
+      <label for="catQ" hidden>Search paints</label>
+      <input type="search" id="catQ" placeholder="Search all 7TV paints" spellcheck="false">
+      <button class="btn small primary cat-random" id="catRandom" type="button" title="Show a random paint"><svg><use href="#i-dice"/></svg><span>Random paint</span></button>
+    </div>
+    <div id="firstsWrap" hidden>
+      <div class="toolbar" style="margin-bottom:12px"><h2>Creator paints</h2></div>
+      <p class="note" style="margin-bottom:14px">Paints made for a specific creator. Paintwatch finds them when the account a paint is named after owns it, or when 7TV's own event for the paint carries that name. New ones show up here as the always-on checker finds them.</p>
+      <div class="upcoming" id="firsts"></div>
+    </div>
+    <div id="nowWrap" hidden>
+      <div class="toolbar" style="margin-bottom:12px"><h2>Get it now</h2></div>
+      <p class="note" style="margin-bottom:14px">Paints you can get right now, from 7TV's store: this month's subscriber paints, the shop, and any free-gift campaign.</p>
+      <div class="upcoming" id="nowGrid"></div>
+    </div>
+    <div id="upcomingWrap">
+      <div class="toolbar" style="margin-bottom:12px"><h2>Upcoming</h2></div>
+      <p class="note" id="upNote" style="margin-bottom:14px"></p>
+      <div class="upcoming" id="upcoming"></div>
+    </div>
+    <div>
+      <div class="toolbar" style="margin-bottom:12px"><h2 id="allTitle">All paints</h2>
+        <label for="catHow" hidden>How to get</label>
+        <select class="field" id="catHow"><option value="">Any way to get</option><option value="now">Available now</option><option value="shop">In the shop now</option><option value="bundle">Monthly sub bundles</option><option value="event">Events</option><option value="creator">Creator paints</option><option value="granted">Given by 7TV</option><option value="unknown">Source not known</option></select>
+        <label for="catSort" hidden>Sort paints</label>
+        <select class="field" id="catSort"><option value="new">Newest</option><option value="worn">Most worn</option><option value="owned">Most owned</option><option value="name">A–Z</option></select></div>
+      <p class="note" id="catNote" style="margin-bottom:14px"></p>
+      <div class="grid" id="catGrid"></div>
+      <div class="sentinel" id="catSentinel"></div>
+    </div>
+  </section>
+</main>
+</div>
+
+<footer>
+  <div class="wrap foot">
+    <div class="foot-about">
+      <span class="paint-word">Paintwatch</span>
+      <p>A fan-made swatch book for 7TV name paints. Look up anyone's collection, find out how to get a paint, and see when the people you follow unlock something new.</p>
+      <p id="footPaint"></p>
+    </div>
+    <nav class="foot-col" aria-label="Footer">
+      <h3>Explore</h3>
+      <button type="button" class="linkish" data-go="home">Home</button>
+      <button type="button" class="linkish" data-go="profile">Look someone up</button>
+      <button type="button" class="linkish" data-go="watch">Tracking</button>
+      <button type="button" class="linkish" data-go="catalog">All paints</button>
+      <a href="https://7tv.app/store" target="_blank" rel="noopener">7TV store ↗</a>
+    </nav>
+    <div class="foot-col foot-thanks">
+      <h3>Made possible by</h3>
+      <ul>
+        <li><a href="https://7tv.app" target="_blank" rel="noopener">7TV</a>: every paint, badge and profile comes from its public API, and the paints themselves are the work of its artists.</li>
+        <li><a href="https://potat.app" target="_blank" rel="noopener">PotatBotat</a> and <a href="https://7database.com/stats" target="_blank" rel="noopener">7database</a>: the "wearing" and "owned" counts.</li>
+        <li><a href="https://api.ivr.fi" target="_blank" rel="noopener">ivr.fi</a>: Twitch name lookups.</li>
+        <li><a href="https://abacus.jasoncameron.dev" target="_blank" rel="noopener">Abacus</a>: profile view counts.</li>
+        <li><a href="https://fonts.google.com" target="_blank" rel="noopener">Google Fonts</a> (Archivo, IBM Plex Mono) and <a href="https://github.com" target="_blank" rel="noopener">GitHub</a> for hosting and the always-on checker.</li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h3>Your data</h3>
+      <p>No accounts and no tracking cookies. The people you track, your recent lookups and settings are saved only in your own browser.</p>
+    </div>
+  </div>
+  <div class="wrap foot-base">
+    <span>© <span id="footYear">2026</span> Paintwatch · fan project</span>
+    <span>Not affiliated with or endorsed by 7TV, Twitch or Kick. Names and paints belong to their owners.</span>
+    <button type="button" class="btn small" id="toTop">↑ Back to top</button>
+  </div>
+</footer>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<dialog id="detail"></dialog>
+
+<script>
+const GQL = "https://7tv.io/v4/gql";
+const IVR = "https://api.ivr.fi/v2/twitch/user?login=";
+// shortcut: profile views use abacus, a free public counter anyone could bump; move to your own backend if the numbers ever matter.
+const VIEWS = "https://abacus.jasoncameron.dev";
+const VIEWS_NS = "paintwatch-pw7tv";
+const IS_LOCAL = location.protocol === "file:" || /^(localhost|127\.|\[::1\]|0\.0\.0\.0)/.test(location.hostname);
+const NEW_DAYS = 14, UPCOMING_DAYS = 60;
+const SRC_COLORS = { Subscription: "#a493ff", Event: "#f2b35c", Store: "#4fd69c", Role: "#6ec8ff", Gift: "#ff7a8a", Other: "#5f5c78" };
+
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const icon = id => `<svg><use href="#i-${id}"/></svg>`;
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem("pw:" + k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("pw:" + k, JSON.stringify(v)); } catch {} },
+};
+const settings = () => ({ desktop: false, sound: true, equip: false, interval: 5, ...store.get("settings", {}) });
+const motionOK = () => !matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ULIDs carry their creation time in the first 10 chars (Crockford base32, ms since epoch).
+const B32 = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+function ulidTime(id) {
+  let t = 0;
+  for (const c of String(id).slice(0, 10).toUpperCase()) { const v = B32.indexOf(c); if (v < 0) return 0; t = t * 32 + v; }
+  return t;
+}
+const fmtDate = ms => ms ? new Date(ms).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "unknown";
+const fmtTime = ms => new Date(ms).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+const fmtExact = ms => new Date(ms).toLocaleString([], { dateStyle: "medium", timeStyle: "medium" });
+const fmtClock = ms => new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+const fmtAgo = ms => { if (!ms) return "never"; const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? "just now" : m < 60 ? m + "m ago" : m < 1440 ? Math.round(m / 60) + "h ago" : Math.round(m / 1440) + "d ago"; };
+const nf = n => Number(n).toLocaleString();
+// Unlock times are only known to the window between two checks; say so instead of pretending to be exact.
+const fmtWindow = (since, at) => !since ? `detected ${fmtTime(at)}` : sameDay(since, at) ? `between ${fmtClock(since)} and ${fmtClock(at)}, ${fmtDate(at)}` : `between ${fmtTime(since)} and ${fmtTime(at)}`;
+
+async function gql(query, variables = {}) {
+  let r;
+  try { r = await fetch(GQL, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query, variables }), signal: AbortSignal.timeout(20000) }); }
+  catch { throw new Error("Couldn't reach 7TV (no answer within 20 seconds). Check your connection and try again."); }
+  if (r.status === 429) throw new Error("7TV is rate limiting us. Wait a minute and try again.");
+  if (!r.ok) throw new Error("7TV answered with an error (" + r.status + "). Try again shortly.");
+  const j = await r.json();
+  if (!j.data && j.errors) throw new Error(j.errors[0].message);
+  return j.data;
+}
+
+/* ---------- catalog + paint rendering ---------- */
+const CAT_Q = `{paints{paints{id name description data{layers{opacity ty{__typename
+ ... on PaintLayerTypeSingleColor{color{hex}}
+ ... on PaintLayerTypeLinearGradient{angle repeating stops{at color{hex}}}
+ ... on PaintLayerTypeRadialGradient{repeating shape stops{at color{hex}}}
+ ... on PaintLayerTypeImage{images{url scale}}}} shadows{color{hex} offsetX offsetY blur}}}}
+ badges{badges{id name description images{url scale}}}}`;
+const cat = { paints: new Map(), badges: new Map() };
+let paintsByNew = [];
+
+const safeUrl = u => /^https:\/\/[^\s"'()\\]+$/.test(u || "") ? u : "";
+// Prefer animated webp at scale <= 3; 7TV lists static and avif variants alongside.
+const imgRank = i => (/\.webp$/.test(i.url) ? 0 : 2) + (/_static\./.test(i.url) ? 1 : 0);
+const bestImg = imgs => safeUrl((imgs || []).filter(i => i.scale <= 3).sort((a, b) => imgRank(a) - imgRank(b) || b.scale - a.scale)[0]?.url || imgs?.[0]?.url);
+const stops = s => (s || []).map(x => `${x.color.hex} ${(x.at * 100).toFixed(1)}%`).join(",");
+
+function paintCss(p) {
+  const bg = [];
+  let img = false;
+  for (const l of p?.data?.layers || []) {
+    const t = l.ty || {};
+    if (t.__typename === "PaintLayerTypeSingleColor") bg.push(`linear-gradient(${t.color.hex},${t.color.hex})`);
+    else if (t.__typename === "PaintLayerTypeLinearGradient" && t.stops?.length > 1) bg.push(`${t.repeating ? "repeating-" : ""}linear-gradient(${t.angle}deg,${stops(t.stops)})`);
+    else if (t.__typename === "PaintLayerTypeRadialGradient" && t.stops?.length > 1) bg.push(`${t.repeating ? "repeating-" : ""}radial-gradient(${String(t.shape || "circle").toLowerCase() === "ellipse" ? "ellipse" : "circle"},${stops(t.stops)})`);
+    else if (t.__typename === "PaintLayerTypeImage") { const u = bestImg(t.images); if (u) { bg.push(`url("${u}")`); img = true; } }
+  }
+  // shortcut: per-layer opacity is ignored; matters only for a handful of multi-layer paints.
+  const sh = (p?.data?.shadows || []).map(s => `drop-shadow(${s.offsetX}px ${s.offsetY}px ${s.blur}px ${s.color.hex})`).join(" ");
+  return { style: `background-image:${bg.join(",") || "linear-gradient(var(--fg),var(--fg))"};${sh ? `filter:${sh};` : ""}`, img };
+}
+// The paint as a solid block (a swatch), without clipping it to text or adding its shadows.
+const swatchStyle = p => { const c = paintCss(p); return c.style.replace(/filter:[^;]*;/, "") + (c.img ? "background-size:cover;background-position:center;" : "background-size:100% 100%;"); };
+const paintSpan = (p, text) => { const c = paintCss(p); return `<span class="paint${c.img ? " img" : ""}" style='${c.style}'>${esc(text ?? p?.name)}</span>`; };
+const painted = (paintId, text) => { const p = cat.paints.get(paintId); return p ? paintSpan(p, text) : esc(text); };
+
+// Three representative colors from a paint, for the profile aura.
+function paintColors(p) {
+  const cols = [];
+  for (const l of p?.data?.layers || []) {
+    const t = l.ty || {};
+    if (t.color) cols.push(t.color.hex);
+    for (const s of t.stops || []) cols.push(s.color.hex);
+  }
+  for (const s of p?.data?.shadows || []) cols.push(s.color.hex);
+  const u = [...new Set(cols.map(c => c.slice(0, 7)))];
+  return u.length ? [u[0], u[Math.floor(u.length / 2)] || u[0], u[u.length - 1]] : null;
+}
+
+async function loadCatalog() {
+  const d = await gql(CAT_Q);
+  for (const p of d.paints.paints) cat.paints.set(p.id, { ...p, t: ulidTime(p.id) });
+  for (const b of d.badges.badges) cat.badges.set(b.id, { ...b, t: ulidTime(b.id), img: bestImg(b.images) });
+  paintsByNew = [...cat.paints.values()].sort((a, b) => b.t - a.t);
+}
+
+/* ---------- users ---------- */
+const FROM = `from{__typename ... on EntitlementNodeSubscriptionBenefit{subscriptionBenefit{name}} ... on EntitlementNodeRole{role{name}} ... on EntitlementNodeSpecialEvent{specialEvent{name}}}`;
+const USER_FIELDS = `id mainConnection{platform platformId platformUsername platformDisplayName platformAvatarUrl}
+ connections{platform platformId platformUsername platformDisplayName platformAvatarUrl}
+ roles{name color{hex}} style{activePaintId activeBadgeId activeProfilePicture{images{url scale}}}
+ inventory{paints{accessible to{... on EntitlementNodePaint{paintId}} ${FROM}} badges{accessible to{... on EntitlementNodeBadge{badgeId}} ${FROM}}}
+ events{createdAt data{__typename ... on EventUserDataChangeActivePaint{newPaintId} ... on EventUserDataChangeActiveBadge{newBadgeId}}}`;
+const BY_TWITCH = `query($id:String!){users{userByConnection(platform:TWITCH,platformId:$id){${USER_FIELDS}}}}`;
+const BY_STV = `query($id:Id!){users{user(id:$id){${USER_FIELDS}}}}`;
+
+function source(from) {
+  switch (from?.__typename) {
+    case "EntitlementNodeSubscriptionBenefit": return ["Subscription", from.subscriptionBenefit?.name];
+    case "EntitlementNodeSpecialEvent": return ["Event", from.specialEvent?.name];
+    case "EntitlementNodeProduct": case "EntitlementNodeShopItem": return ["Store", null];
+    case "EntitlementNodeRole": return ["Role", from.role?.name];
+    case "EntitlementNodeUser": return ["Gift", "Granted directly"];
+    // Items attached to the user's subscription itself (not a monthly bundle), e.g. subscriber-only drops.
+    case "EntitlementNodeSubscription": return ["Subscription", "Active 7TV subscription"];
+    default: return ["Other", null];
+  }
+}
+
+// Twitch name of a search result, if it has a linked Twitch account.
+const twitchOf = u => { const c = [u.mainConnection, ...(u.connections || [])].find(c => c?.platform === "TWITCH"); return c?.platformDisplayName || c?.platformUsername || null; };
+// Twitch name first, with the 7TV name in grey brackets when the two differ.
+const aliasName = x => x.twitch && x.twitch.toLowerCase() !== x.name.toLowerCase()
+  ? `${painted(x.paint, x.twitch)} <span class="alias">(${esc(x.name)})</span>` : painted(x.paint, x.name);
+// 7TV profile picture first, then the main account's picture, then any linked account's.
+const avatarOf = d => bestImg(d.style?.activeProfilePicture?.images) || safeUrl(d.mainConnection?.platformAvatarUrl) || safeUrl((d.connections || []).find(c => safeUrl(c.platformAvatarUrl))?.platformAvatarUrl);
+const PLATFORM_URL = { TWITCH: "twitch.tv/", KICK: "kick.com/" };
+
+const SEARCH_Q = `query($q:String!){users{search(query:$q,perPage:8){items{id
+ mainConnection{platform platformUsername platformDisplayName platformAvatarUrl}
+ connections{platform platformUsername platformDisplayName platformAvatarUrl}
+ style{activePaintId activeProfilePicture{images{url scale}}}}}}}`;
+async function searchUsers(q) { try { return (await gql(SEARCH_Q, { q })).users.search.items || []; } catch { return null; } }
+// Best exact match for a typed name: the account's main name first, then any linked account (Twitch, Kick, Discord).
+function exactMatch(items, login) {
+  const is = c => c && [c.platformUsername, c.platformDisplayName].some(n => n?.toLowerCase() === login);
+  return items.find(u => is(u.mainConnection)) || items.find(u => (u.connections || []).some(is));
+}
+
+// Turns whatever was typed or pasted into a lookup key: {kind:"twitch"|"stv", id} or {kind:"login", login}.
+function parseQuery(raw) {
+  let s = String(raw || "").trim();
+  if (!s) throw new Error("Type a Twitch name or paste a profile link.");
+  const url = s.match(/^(?:https?:\/\/)?(?:www\.|m\.)?(twitch\.tv|7tv\.app|old\.7tv\.app)\/(?:users\/)?([^/?#\s]+)/i);
+  if (url) s = url[2];
+  s = s.replace(/^@/, "");
+  if (/^[0-9A-HJKMNP-TV-Z]{26}$/i.test(s)) return { kind: "stv", id: s.toUpperCase() };
+  if (/^\d{1,12}$/.test(s)) return { kind: "twitch", id: s };
+  if (/^[A-Za-z0-9_]{1,25}$/.test(s)) return { kind: "login", login: s.toLowerCase() };
+  throw new Error(`"${s}" isn't a valid Twitch name. Names use only letters, numbers and underscores.`);
+}
+
+const loginCache = store.get("logins", {});
+async function twitchIdFor(login) {
+  if (loginCache[login]) return loginCache[login];
+  // 7TV's own user search currently returns errors, so names go through ivr.fi's public Twitch lookup.
+  let r;
+  try { r = await fetch(IVR + encodeURIComponent(login), { signal: AbortSignal.timeout(12000) }); } catch { throw new Error("Couldn't reach the Twitch name lookup. Try a numeric Twitch ID or a 7tv.app link instead."); }
+  if (!r.ok) throw new Error("The Twitch name lookup failed (" + r.status + "). Try a 7tv.app link instead.");
+  const j = await r.json();
+  if (!j?.[0]?.id) throw new Error(`There's no Twitch account named "${login}". Check the spelling.`);
+  loginCache[login] = j[0].id; store.set("logins", loginCache);
+  return j[0].id;
+}
+
+async function fetchUser(key) {
+  if (key.kind === "login") {
+    // 7TV's own search finds Kick- and Discord-main accounts too; the Twitch lookup is the fallback when search is down.
+    const items = await searchUsers(key.login);
+    const hit = items && exactMatch(items, key.login);
+    key = hit ? { kind: "stv", id: hit.id } : { kind: "twitch", id: await twitchIdFor(key.login) };
+  }
+  const d = key.kind === "stv" ? (await gql(BY_STV, { id: key.id })).users.user : (await gql(BY_TWITCH, { id: key.id })).users.userByConnection;
+  if (!d) throw new Error(key.kind === "stv" ? "No 7TV user has that ID." : "No 7TV account uses that name, and that Twitch account hasn't linked 7TV. If they're on Kick or Discord, pick them from the suggestions or paste their 7tv.app link.");
+  const own = kind => {
+    const m = new Map();
+    for (const e of d.inventory[kind]) {
+      const id = e.to?.paintId || e.to?.badgeId;
+      if (!id || e.accessible === false) continue; // inaccessible entitlements aren't usable, so don't count them
+      const [cls, label] = source(e.from);
+      if (!m.has(id) || m.get(id).cls === "Other") m.set(id, { id, cls, label });
+    }
+    return m;
+  };
+  const twitch = (d.connections || []).find(c => c.platform === "TWITCH") || (d.mainConnection?.platform === "TWITCH" ? d.mainConnection : null);
+  const conn = d.mainConnection || {};
+  return {
+    id: d.id, conn, twitch, fetchedAt: Date.now(),
+    links: [d.mainConnection, ...(d.connections || [])].filter((c, i, a) => c && PLATFORM_URL[c.platform] && a.findIndex(x => x?.platform === c.platform) === i),
+    name: conn.platformDisplayName || conn.platformUsername || twitch?.platformDisplayName || "unknown",
+    avatar: avatarOf(d),
+    roles: d.roles || [], style: d.style || {}, paints: own("paints"), badges: own("badges"),
+    // 7TV records exact times for equip changes (not for unlocks).
+    outfits: (d.events || []).filter(e => e.data?.newPaintId !== undefined || e.data?.newBadgeId !== undefined)
+      .map(e => ({ at: Date.parse(e.createdAt), kind: e.data.newPaintId !== undefined ? "paints" : "badges", id: e.data.newPaintId ?? e.data.newBadgeId }))
+      .sort((a, b) => b.at - a.at),
+  };
+}
+
+/* ---------- profile views ---------- */
+async function profileViews(id) {
+  let hit = false;
+  try { hit = !IS_LOCAL && !sessionStorage.getItem("viewed:" + id); } catch {}
+  try {
+    const r = await fetch(`${VIEWS}/${hit ? "hit" : "get"}/${VIEWS_NS}/${encodeURIComponent(id)}`, { signal: AbortSignal.timeout(6000) });
+    if (r.status === 404) return 0;
+    if (!r.ok) return null;
+    if (hit) try { sessionStorage.setItem("viewed:" + id, "1"); } catch {}
+    return (await r.json()).value ?? null;
+  } catch { return null; }
+}
+
+/* ---------- recents + suggestions ---------- */
+const recents = () => store.get("recent", []);
+function remember(u) {
+  const r = recents().filter(x => x.id !== u.id);
+  store.set("recent", [{ id: u.id, name: u.name, paint: u.style.activePaintId || null, avatar: u.avatar }, ...r].slice(0, 8));
+}
+function renderSuggest() {
+  const q = $("#q").value.trim().toLowerCase().replace(/^@/, "");
+  const seen = new Set();
+  const pick = list => list.filter(x => !seen.has(x.id) && (!q || x.name.toLowerCase().includes(q)) && seen.add(x.id)).slice(0, 5);
+  const rec = pick(recents()), tr = pick(watchlist()), top = q ? pick(serverBoard?.users || []) : [];
+  const live = q.length >= 2 ? liveResults.filter(x => !seen.has(x.id) && seen.add(x.id)).slice(0, 6) : [];
+  const row = (x, tag) => `<button type="button" data-stv="${esc(x.id)}">${safeUrl(x.avatar) ? `<img src="${esc(x.avatar)}" alt="">` : `<span style="width:24px"></span>`}${aliasName(x)}<small>${esc(tag)}</small></button>`;
+  const html = (rec.length ? `<div class="lbl">Recent</div>${rec.map(x => row(x, "recent")).join("")}` : "")
+    + (tr.length ? `<div class="lbl">Tracking</div>${tr.map(x => row(x, x.paints.length + " paints")).join("")}` : "")
+    + (top.length ? `<div class="lbl">Streamers</div>${top.map(x => row(x, x.paints + " paints")).join("")}` : "")
+    + (live.length ? `<div class="lbl">On 7TV</div>${live.map(x => row(x, x.tag)).join("")}` : q.length >= 2 && liveSearching ? `<div class="lbl">Searching 7TV…</div>` : "");
+  $("#suggest").innerHTML = html;
+  $("#suggest").hidden = !html;
+}
+// Live results from 7TV's user search, so Kick- and Discord-main accounts show up as you type.
+let liveResults = [], liveSearching = false, liveSeq = 0, liveTimer;
+async function liveSearch() {
+  const q = $("#q").value.trim().replace(/^@/, "");
+  if (q.length < 2) { liveResults = []; liveSearching = false; return renderSuggest(); }
+  const seq = ++liveSeq;
+  liveSearching = true; renderSuggest();
+  const items = await searchUsers(q);
+  if (seq !== liveSeq) return;
+  liveSearching = false;
+  liveResults = (items || []).map(u => {
+    const m = u.mainConnection || {};
+    return { id: u.id, name: m.platformDisplayName || m.platformUsername || "unknown", paint: u.style?.activePaintId, avatar: avatarOf(u), twitch: twitchOf(u),
+      tag: (m.platform || "").toLowerCase() };
+  });
+  if (document.activeElement === $("#q") || $("#suggest").contains(document.activeElement)) renderSuggest();
+}
+$("#q").addEventListener("focus", renderSuggest);
+$("#q").addEventListener("input", () => { renderSuggest(); clearTimeout(liveTimer); liveTimer = setTimeout(liveSearch, 250); });
+$("#suggest").addEventListener("mousedown", e => e.preventDefault()); // keep focus so the click lands
+$("#suggest").addEventListener("click", e => { const b = e.target.closest("[data-stv]"); if (b) { $("#suggest").hidden = true; $("#q").blur(); openUser({ kind: "stv", id: b.dataset.stv }); } });
+$("#q").addEventListener("blur", () => setTimeout(() => { if (!$("#suggest").contains(document.activeElement)) $("#suggest").hidden = true; }, 120));
+$("#q").addEventListener("keydown", e => {
+  if (e.key === "Escape") $("#suggest").hidden = true;
+  if (e.key === "ArrowDown" && !$("#suggest").hidden) { e.preventDefault(); $("#suggest button")?.focus(); }
+});
+$("#suggest").addEventListener("keydown", e => {
+  const bs = $$("#suggest button"), i = bs.indexOf(document.activeElement);
+  if (e.key === "ArrowDown") { e.preventDefault(); bs[Math.min(i + 1, bs.length - 1)]?.focus(); }
+  if (e.key === "ArrowUp") { e.preventDefault(); i <= 0 ? $("#q").focus() : bs[i - 1].focus(); }
+  if (e.key === "Escape") { $("#suggest").hidden = true; $("#q").focus(); }
+});
+
+/* ---------- animation helpers ---------- */
+function countUp(root) {
+  for (const el of $$("[data-count]", root)) {
+    const to = +el.dataset.count;
+    if (!motionOK() || !to) { el.textContent = nf(to); continue; }
+    const t0 = performance.now(), dur = 900;
+    const step = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = nf(Math.round(to * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }
+}
+const replay = el => { el.classList.remove("enter"); void el.offsetWidth; el.classList.add("enter"); };
+
+/* ---------- profile view ---------- */
+let current = null, own = { q: "", src: "", sort: "new", kind: "paints", limit: 48 };
+
+/* ---------- subscription (public on 7TV: total days, paid-up-until date, current period, next badge) ---------- */
+let subProduct = null;
+async function subInfo(id) {
+  try {
+    subProduct ||= (await gql(`{products{subscriptionProducts{id}}}`)).products.subscriptionProducts[0]?.id;
+    if (!subProduct) return null;
+    const d = await gql(`query($id:Id!,$p:Id!){users{user(id:$id){billing(productId:$p){subscriptionInfo{totalDays endDate activePeriod{start end isTrial autoRenew giftedById}} badgeProgress{currentBadgeId nextBadge{badgeId daysLeft}}}}}}`, { id, p: subProduct });
+    return d.users.user?.billing || null;
+  } catch { return null; }
+}
+// "7 years 10 months", "3 months 4 days", "12 days"
+function span(ms) {
+  const d = Math.max(0, Math.floor(ms / 864e5)), y = Math.floor(d / 365), m = Math.floor((d % 365) / 30.44), dd = Math.round(d - y * 365 - m * 30.44);
+  const parts = y ? [[y, "year"], [m, "month"]] : m ? [[m, "month"], [dd, "day"]] : [[d, "day"]];
+  return parts.filter(([n], i) => n || i === 0).map(([n, w]) => `${n} ${w}${n === 1 ? "" : "s"}`).join(" ");
+}
+function subHtml(b) {
+  const si = b?.subscriptionInfo, end = si?.endDate ? Date.parse(si.endDate) : 0, active = end > Date.now(), p = si?.activePeriod;
+  if (!si || !si.totalDays) return `<div class="sub-main"><p class="eyebrow">7TV subscription</p><div class="sub-big">Not subscribed</div>
+    <p class="note">They've never had a 7TV subscription, or 7TV didn't return it. Monthly paint bundles come with a <a href="${STORE_URL}" target="_blank" rel="noopener">subscription</a>.</p></div>`;
+  const cur = cat.badges.get(b.badgeProgress?.currentBadgeId), next = cat.badges.get(b.badgeProgress?.nextBadge?.badgeId), left = b.badgeProgress?.nextBadge?.daysLeft;
+  return `<div class="sub-main">
+      <p class="eyebrow">7TV subscription</p>
+      <div class="sub-big">${active ? `<b>${span(end - Date.now())}</b> left` : "Ended"}</div>
+      <p class="note">${active ? `Paid up until ${fmtDate(end)}` : `Ran out ${fmtDate(end)}`}${p && active ? ` · current period ends ${fmtDate(Date.parse(p.end))}${p.giftedById ? " · gifted" : ""}${p.isTrial ? " · trial" : ""}${p.autoRenew ? " · renews automatically" : " · won't auto-renew"}` : ""}</p>
+    </div>
+    <div class="sub-stat"><b class="mono">${nf(si.totalDays)}</b><span>days subscribed in total${si.totalDays >= 30 ? ` (${span(si.totalDays * 864e5)})` : ""}</span></div>
+    ${next && left != null ? `<div class="sub-next">
+      <div class="sub-badges">${cur?.img ? `<img src="${esc(cur.img)}" alt="${esc(cur.name)}" title="${esc(cur.name)}">` : ""}<span class="sub-arrow"></span><img src="${esc(next.img)}" alt="${esc(next.name)}" title="${esc(next.name)}"></div>
+      <span>${active ? `<b>${nf(Math.ceil(left))}</b> day${Math.ceil(left) === 1 ? "" : "s"} until <b>${esc(next.name.replace("7TV Subscriber - ", ""))}</b>` : `Next badge: ${esc(next.name)}`}</span>
+    </div>` : cur?.img ? `<div class="sub-next"><div class="sub-badges"><img src="${esc(cur.img)}" alt="${esc(cur.name)}"></div><span>${esc(cur.name)}</span></div>` : ""}`;
+}
+
+function profileSkeleton() {
+  $("#view-profile").innerHTML = `<div class="hero"><div class="hero-in"><div class="avatar skel"></div><div class="who"><div class="skel" style="height:56px;width:min(380px,100%)"></div><div class="skel" style="height:24px;width:220px"></div></div></div>
+    <div class="stats">${"<div class='stat'><div class='skel' style='height:26px;width:60%'></div><div class='skel' style='height:12px;width:80%'></div></div>".repeat(6)}</div></div>`;
+}
+
+function renderProfile() {
+  const el = $("#view-profile");
+  if (!current) {
+    const rec = recents();
+    el.innerHTML = `<div class="card" style="display:grid;gap:14px;padding:28px">
+      <h2>Look someone up</h2>
+      <p class="note">See anyone's paints, badges, subscription and paint wall. Twitch, Kick and Discord names all work, or paste a twitch.tv or 7tv.app link.</p>
+      <form class="home-lookup" id="profLookup" autocomplete="off"><label for="profQ" hidden>Look up a 7TV user</label>
+        <input id="profQ" placeholder="Twitch or Kick name, or a link" spellcheck="false"><button class="btn primary" type="submit">Look up</button></form>
+      ${rec.length ? `<div><p class="eyebrow">Recent</p><div class="chips">${rec.map(x => `<button type="button" class="chip linkish" data-open-user="${esc(x.id)}">${painted(x.paint, x.name)}</button>`).join("")}</div></div>` : ""}
+    </div>`;
+    $("#profLookup").onsubmit = e => { e.preventDefault(); const v = $("#profQ").value; if (v.trim()) openUser(v); };
+    return;
+  }
+  const u = current;
+  const ap = cat.paints.get(u.style.activePaintId), ab = cat.badges.get(u.style.activeBadgeId);
+  const paints = [...u.paints.values()].map(o => ({ ...o, item: cat.paints.get(o.id) })).filter(o => o.item);
+  const badges = [...u.badges.values()].map(o => ({ ...o, item: cat.badges.get(o.id) })).filter(o => o.item);
+  const all = [...paints, ...badges];
+  const bySrc = {}; for (const o of all) bySrc[o.cls] = (bySrc[o.cls] || 0) + 1;
+  const srcs = Object.entries(bySrc).sort((a, b) => b[1] - a[1]);
+  const bundles = new Set(paints.filter(o => o.cls === "Subscription" && /bundle/i.test(o.label || "")).map(o => o.label)).size;
+  const times = all.map(o => o.item.t).filter(Boolean).sort((a, b) => a - b);
+  const newest = paints.slice().sort((a, b) => b.item.t - a.item.t)[0];
+  // Paints grouped by the year they were added to 7TV; each bar is built from the paints themselves.
+  const pYears = {}; for (const o of paints) (pYears[new Date(o.item.t).getFullYear()] ||= []).push(o.item);
+  const yKeys = Object.keys(pYears).sort(), yMax = Math.max(1, ...yKeys.map(y => pYears[y].length));
+  const pct = (n, d) => d ? Math.round(1000 * n / d) / 10 : 0;
+  const haveLatest = paintsByNew.slice(0, 30).filter(p => u.paints.has(p.id)).length;
+  const w = watchlist().find(x => x.id === u.id);
+  const aura = paintColors(ap) || ["#a493ff", "#4fd69c", "#ff7a8a"];
+  const nameHtml = ap ? paintSpan(ap, u.name) : esc(u.name);
+
+  el.innerHTML = `
+  <div class="hero enter" style='--aura-1:${aura[0]};--aura-2:${aura[1]};--aura-3:${aura[2]};${ap ? `--swatch:${swatchStyle(ap).match(/background-image:([^;]*)/)[1]}` : ""}'>
+    <div class="hero-in">
+      ${u.avatar ? `<img class="avatar" src="${esc(u.avatar)}" alt="">` : `<div class="avatar"></div>`}
+      <div class="who">
+        <div class="name">${nameHtml}</div>
+        <div class="chips">
+          ${u.roles.filter(r => r.name !== "Default").map(r => `<span class="chip" style="color:${esc(r.color?.hex?.slice(0, 7) || "inherit")}">${esc(r.name)}</span>`).join("")}
+          ${u.links.map(c => `<a class="chip muted" href="https://${PLATFORM_URL[c.platform]}${encodeURIComponent(c.platformUsername)}" target="_blank" rel="noopener" style="text-decoration:none">${PLATFORM_URL[c.platform]}${esc(c.platformUsername)}</a>`).join("")}
+          <span class="chip muted" id="viewsChip" title="${IS_LOCAL ? "Views are counted on the published site, not on this local copy" : "Times this profile was opened on Paintwatch"}">${icon("eye")}<span>…</span></span>
+        </div>
+        <div class="chat" aria-label="How their name looks in chat"><span class="ts">${new Date().toTimeString().slice(0, 5)}</span>${ab?.img ? `<img src="${esc(ab.img)}" alt="${esc(ab.name)}" title="${esc(ab.name)}">` : ""}<span class="n">${nameHtml}</span>: ${ap || ab ? `wearing ${[ap && `<b>${esc(ap.name)}</b>`, ab && `<b>${esc(ab.name)}</b>`].filter(Boolean).join(" and ")}` : `<span class="muted">not wearing a paint or badge right now</span>`}</div>
+      </div>
+      <div class="actions">
+        <button id="watchBtn" type="button" class="btn ${w ? "" : "primary"}">${w ? icon("check") + "Tracking" : icon("bell") + "Track unlocks"}</button>
+        <button id="shareBtn" type="button" class="btn small">${icon("link")}Copy link</button>
+        <button id="refreshBtn" type="button" class="btn small" title="Load this profile again from 7TV">${icon("refresh")}Refresh</button>
+        <span class="mono" style="font-size:11px;color:var(--chat-muted)">updated ${fmtClock(u.fetchedAt)}</span>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="v" data-count="${paints.length}">0</div><div class="k"><span class="ring" style="--p:${pct(paints.length, cat.paints.size)}"></span><span>paints · ${pct(paints.length, cat.paints.size)}% of all</span></div></div>
+      <div class="stat"><div class="v" data-count="${badges.length}">0</div><div class="k"><span class="ring" style="--p:${pct(badges.length, cat.badges.size)}"></span><span>badges · ${pct(badges.length, cat.badges.size)}% of all</span></div></div>
+      <div class="stat"><div class="v" data-count="${bundles}">0</div><div class="k">monthly sub bundles</div></div>
+      <div class="stat"><div class="v">${times[0] ? new Date(times[0]).getFullYear() : "—"}</div><div class="k">oldest item owned (year added)</div></div>
+      <div class="stat"><div class="v"><span data-count="${haveLatest}">0</span><small>/30</small></div><div class="k">of the 30 newest paints</div></div>
+      <div class="stat"><div class="v" title="${esc(newest?.item.name || "")}">${newest ? paintSpan(newest.item) : "—"}</div><div class="k">newest paint owned</div></div>
+    </div>
+  </div>
+
+  <div class="subcard rise" id="subCard" style="--i:1"><div class="skel" style="height:96px;border-radius:12px"></div></div>
+
+  ${paints.length ? `<div class="card rise wallcard" style="--i:2">
+    <div class="toolbar" style="margin-bottom:12px"><h2>Paint wall</h2><span class="muted mono" style="font-size:12px">${paints.length} paints · oldest to newest · click one for details</span></div>
+    <div class="wall">${paints.map(o => o.item).sort((a, b) => a.t - b.t).map((p, i) => `<button type="button" class="wcell${p.id === u.style.activePaintId ? " on" : ""}" style='${swatchStyle(p)};--i:${i}' data-detail="paints:${esc(p.id)}" title="${esc(p.name)}" aria-label="${esc(p.name)}"></button>`).join("")}</div>
+  </div>` : ""}
+
+  <div class="cols">
+    <div class="card rise" style="--i:2">
+      <p class="eyebrow">Where it came from</p>
+      ${srcs.length ? `<div class="stack">${srcs.map(([k, n]) => `<div style="flex:${n};background:${SRC_COLORS[k]}" title="${k}: ${n}"></div>`).join("")}</div>
+      <div class="srcs">${srcs.map(([k, n]) => `<div class="src"><span><i style="background:${SRC_COLORS[k]}"></i>${k}</span><span class="bar"><span style="width:${(100 * n / srcs[0][1]).toFixed(1)}%;background:${SRC_COLORS[k]}"></span></span><span class="mono">${n}</span><span class="mono muted">${Math.round(100 * n / all.length)}%</span></div>`).join("")}</div>
+      ${bundles ? `<p class="note" style="margin-top:14px">Includes ${bundles} monthly paint bundle${bundles === 1 ? "" : "s"}, from ${esc(subRange(paints))}.</p>` : ""}` : `<p class="muted">Nothing collected yet.</p>`}
+    </div>
+    <div class="card rise" style="--i:3">
+      <p class="eyebrow">Paints by year added to 7TV</p>
+      ${yKeys.length ? `<div class="years">${yKeys.map((y, i) => `<div class="ycol" style="--i:${i}">
+        <span class="yn">${pYears[y].length}</span>
+        <div class="ytrack"><div class="ybar" style="height:${Math.max(3, 100 * pYears[y].length / yMax).toFixed(1)}%">${pYears[y].sort((a, b) => a.t - b.t).map(p => `<i style='${swatchStyle(p)}' title="${esc(p.name)}"></i>`).join("")}</div></div>
+        <span class="yl">${y}</span></div>`).join("")}</div>` : `<p class="muted">No paints yet.</p>`}
+    </div>
+  </div>
+
+  ${u.outfits.length ? `<div class="card rise" style="--i:4">
+    <p class="eyebrow">Recent outfit changes · exact times from 7TV</p>
+    <div class="outfits">${u.outfits.slice(0, 8).map(o => {
+      const it = o.id ? cat[o.kind].get(o.id) : null;
+      const nm = !o.id ? `<span class="muted" style="font-weight:500;font-size:14px">took it off</span>` : !it ? `<span class="muted">a retired item</span>` : o.kind === "paints" ? paintSpan(it, u.name) : `${it.img ? `<img src="${esc(it.img)}" alt="">` : ""}${esc(it.name)}`;
+      return `<div class="outfit"><span class="mono muted" title="${fmtExact(o.at)}">${fmtTime(o.at)}</span><span class="muted">${o.kind === "paints" ? "paint" : "badge"}</span><b>${nm}</b><span class="tn">${o.kind === "paints" && it ? esc(it.name) : ""}</span></div>`;
+    }).join("")}</div>
+  </div>` : ""}
+
+  <div style="display:grid;gap:16px">
+    <div class="toolbar">
+      <h2>Collection</h2>
+      <div class="seg" id="ownKind"><button type="button" data-k="paints" aria-pressed="${own.kind === "paints"}">Paints ${paints.length}</button><button type="button" data-k="badges" aria-pressed="${own.kind === "badges"}">Badges ${badges.length}</button></div>
+      <label for="ownQ" hidden>Filter collection</label>
+      <input class="field" type="search" id="ownQ" placeholder="Filter by name" value="${esc(own.q)}">
+      <label for="ownSrc" hidden>Source</label>
+      <select class="field" id="ownSrc"><option value="">All sources</option>${srcs.map(([k]) => `<option>${k}</option>`).join("")}</select>
+      <label for="ownSort" hidden>Sort</label>
+      <select class="field" id="ownSort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="name">A–Z</option></select>
+    </div>
+    <div class="grid" id="ownGrid"></div>
+    <button class="btn more" id="ownMore" type="button" hidden>Show more</button>
+  </div>`;
+
+  $("#ownSrc").value = own.src; $("#ownSort").value = own.sort;
+  const rerender = () => { own.limit = 48; renderOwned(paints, badges); };
+  $("#ownSrc").onchange = e => { own.src = e.target.value; rerender(); };
+  $("#ownSort").onchange = e => { own.sort = e.target.value; rerender(); };
+  $("#ownQ").oninput = e => { own.q = e.target.value; rerender(); };
+  $("#ownKind").onclick = e => { const b = e.target.closest("[data-k]"); if (!b) return; own.kind = b.dataset.k; $$("#ownKind button").forEach(x => x.setAttribute("aria-pressed", x === b)); rerender(); };
+  $("#ownMore").onclick = () => { own.limit += 96; renderOwned(paints, badges, own.limit - 96); };
+  $("#watchBtn").onclick = () => { toggleWatch(u); renderProfile(); };
+  $("#refreshBtn").onclick = async e => {
+    const b = e.currentTarget; b.disabled = true; b.classList.add("busy");
+    await openUser({ kind: "stv", id: u.id }, { push: false }); // re-renders the profile with fresh data
+    personCache.set(current?.id, current);
+  };
+  $("#shareBtn").onclick = async () => {
+    const link = shareUrl(u);
+    try { await navigator.clipboard.writeText(link); toast(`<div><b>Link copied</b><div class="muted mono" style="font-size:12px;overflow-wrap:anywhere">${esc(link)}</div></div>`); }
+    catch { toast(`<div><b>Copy this link</b><div class="mono" style="font-size:12px;overflow-wrap:anywhere;user-select:all">${esc(link)}</div></div>`); }
+  };
+  renderOwned(paints, badges);
+  countUp(el);
+  subInfo(u.id).then(b => { if (current?.id === u.id && $("#subCard")) $("#subCard").innerHTML = subHtml(b); });
+  profileViews(u.id).then(v => {
+    const c = $("#viewsChip");
+    if (!c || current?.id !== u.id) return;
+    if (v === null) { c.hidden = true; return; }
+    c.querySelector("span").textContent = IS_LOCAL ? `${nf(v)} views (counted once published)` : `${nf(v)} profile view${v === 1 ? "" : "s"}`;
+  });
+}
+
+// "March 2022 Paint Bundle" … "October 2026 Paint Bundle" → "March 2022 to October 2026"
+function subRange(paints) {
+  const months = [...new Set(paints.filter(o => o.cls === "Subscription" && /bundle/i.test(o.label || "")).map(o => o.label))]
+    .map(l => { const m = /([A-Za-z]+) (\d{4})/.exec(l || ""); return m ? { l: `${m[1]} ${m[2]}`, t: Date.parse(`1 ${m[1]} ${m[2]}`) } : null; })
+    .filter(x => x && !isNaN(x.t)).sort((a, b) => a.t - b.t);
+  return months.length ? (months.length === 1 ? months[0].l : `${months[0].l} to ${months[months.length - 1].l}`) : "subscriptions";
+}
+
+const sorter = sort => sort === "old" ? (a, b) => a.t - b.t : sort === "name" ? (a, b) => a.name.localeCompare(b.name) : (a, b) => b.t - a.t;
+const isNew = t => Date.now() - t < NEW_DAYS * 864e5;
+
+function itemCard(it, kind, meta, { on = false, flag = null, i = 0 } = {}) {
+  const preview = kind === "paints" ? paintSpan(it) : (it.img ? `<img src="${esc(it.img)}" alt="" loading="lazy">` : "");
+  const f = on ? `<span class="flag eq">wearing</span>` : flag === "soon" ? `<span class="flag soon">upcoming</span>` : flag === "now" ? `<span class="flag now">get it now</span>` : isNew(it.t) ? `<span class="flag">new</span>` : "";
+  return `<button type="button" class="item rise${kind === "badges" ? " badge" : ""}" style="--i:${i}" data-detail="${kind}:${esc(it.id)}">${f}
+    ${kind === "paints" ? `<div class="swatch" style='${swatchStyle(it)}'></div>` : ""}
+    <div class="well">${preview}</div>
+    <div class="meta"><b>${esc(it.name)}</b><span class="src1">${esc(meta) || "&nbsp;"}</span><span class="row2"><span title="Date added to 7TV">added ${fmtDate(it.t)}</span>${wearingTag(kind, it.id)}</span></div>
+  </button>`;
+}
+// "1,317 wearing" from 7database's PotatBotat stats; nothing when nobody it tracks has the item on.
+function wearingTag(kind, id) {
+  const c = communityStat(kind, id);
+  return c?.[1] ? `<span class="wear" title="${nf(c[1])} of the ${nf(community[kind].users)} users PotatBotat tracks are wearing this right now (via 7database.com)">${nf(c[1])} wearing</span>` : "";
+}
+
+function renderOwned(paints, badges, from = 0) {
+  const q = own.q.toLowerCase();
+  const list = (own.kind === "paints" ? paints : badges)
+    .filter(o => (!own.src || o.cls === own.src) && (!q || o.item.name.toLowerCase().includes(q)))
+    .map(o => ({ ...o.item, _src: o.label || o.cls })).sort(sorter(own.sort));
+  const html = list.slice(from, own.limit).map((it, i) => itemCard(it, own.kind, it._src, { on: it.id === current.style.activePaintId || it.id === current.style.activeBadgeId, i })).join("");
+  if (from) $("#ownGrid").insertAdjacentHTML("beforeend", html);
+  else $("#ownGrid").innerHTML = html || `<div class="empty" style="grid-column:1/-1">Nothing matches that filter.</div>`;
+  $("#ownMore").hidden = list.length <= own.limit;
+}
+
+/* ---------- detail dialog ---------- */
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-detail]");
+  if (!b) return;
+  const [kind, id] = b.dataset.detail.split(":");
+  const it = cat[kind].get(id);
+  if (it) openDetail(kind, it);
+});
+// Popularity block: PotatBotat's counts (via 7database) when someone it tracks wears the item, otherwise what Paintwatch's own scan saw.
+function popularityHtml(kind, it) {
+  const c = community?.[kind], s = c?.items[it.id];
+  const credit = `<p class="note" style="font-size:12px">From PotatBotat's ${nf(c?.users || 0)} tracked users, via <a href="https://7database.com/stats" target="_blank" rel="noopener" style="color:var(--muted)">7database.com</a>.</p>`;
+  if (s) {
+    const [owned, wearing] = s;
+    return `<div class="dstats">
+        <div><b class="mono">${nf(owned)}</b><span>own it</span></div>
+        <div><b class="mono">${nf(wearing)}</b><span>wearing it now</span></div>
+        <div><b class="mono">${owned ? (100 * wearing / owned).toFixed(1) : 0}%</b><span>of owners wear it</span></div>
+      </div>${credit}`;
+  }
+  const o = kind === "paints" ? paintOwners?.paints[it.id] : null;
+  if (o) return `<div class="dstats"><div><b class="mono">${nf(o.owners)}</b><span>owners seen</span></div><div><b class="mono">${nf(o.wearing)}</b><span>wearing it</span></div></div>
+    <p class="note" style="font-size:12px">Nobody PotatBotat tracks is wearing it, so these come from Paintwatch's own scan of ${nf(paintOwners.accounts)} accounts. The real total is higher.</p>`;
+  if (c || paintOwners) return `<p class="note">No owners found yet. Nobody PotatBotat tracks is wearing it${paintOwners ? `, and none of the ${nf(paintOwners.accounts)} accounts Paintwatch has scanned own it` : ""}.</p>`;
+  return "";
+}
+
+function wearingLine(kind, it) {
+  const c = communityStat(kind, it.id), users = community?.[kind]?.users;
+  if (!community) return "";
+  return `<div class="wearline"><span class="live-dot"${c?.[1] ? "" : ` style="background:var(--dim)"`}></span><div>
+    ${c?.[1] ? `<b class="mono">${nf(c[1])}</b> ${c[1] === 1 ? "person is" : "people are"} wearing it right now` : "Nobody tracked is wearing it right now"}
+    <div class="note" style="font-size:12px">Out of ${nf(users)} users PotatBotat tracks, via <a href="https://7database.com/stats" target="_blank" rel="noopener" style="color:var(--muted)">7database.com</a>.</div></div></div>`;
+}
+
+function howHtml(it) {
+  const h = howToGet(it.id);
+  const row = (x, now) => `<div class="howrow${now ? " now" : ""}"><span class="dot"></span><span>${x.text}</span></div>`;
+  const empty = isUpcoming(it) ? "Not out yet. New paints usually arrive in a monthly subscriber bundle or an event; 7TV doesn't announce dates here."
+    : "Paintwatch hasn't seen anyone who owns this yet, so how it's obtained isn't known.";
+  return `<div class="how"><p class="eyebrow" style="margin:0 0 8px">How to get it</p>
+    ${h.now.map(x => row(x, true)).join("")}${h.past.map(x => row(x, false)).join("")}
+    ${!h.known ? `<p class="note">${empty}</p>` : !h.now.length ? `<p class="note" style="font-size:12px;margin-top:6px">Not on offer right now.</p>` : ""}</div>`;
+}
+
+function openDetail(kind, it) {
+  const w = watchlist(), owners = w.filter(x => x[kind].includes(it.id));
+  const f = firstsMap.get(it.id), fi = f && firstInfo(f);
+  const d = $("#detail");
+  d.innerHTML = `<div class="dlg-top"><span id="tryOut">${kind === "paints" ? paintSpan(it) : (it.img ? `<img src="${esc(it.img)}" alt="">` : "")}</span>
+      <button class="icon-btn dlg-close" type="button" aria-label="Close" data-close>${icon("x")}</button></div>
+    ${kind === "paints" ? `<div class="dlg-swatch" style='${swatchStyle(it)}'></div>` : ""}
+    <div class="dlg-body">
+      <div>
+        <h2>${esc(it.name)}${isUpcoming(it) ? `<span class="flag soon inline">upcoming</span>` : isNew(it.t) ? `<span class="flag inline">new</span>` : ""}</h2>
+        <p class="muted" style="margin:4px 0 0;font-size:13.5px">${kind === "paints" ? "Name paint" : "Badge"} · added to 7TV ${fmtDate(it.t)}${it.description ? ` · ${esc(it.description)}` : ""}</p>
+      </div>
+      ${kind === "paints" ? `<div class="try"><label for="tryName">Try it on a name</label>
+        <input id="tryName" class="field" maxlength="25" placeholder="Type any name" autocomplete="off" spellcheck="false"></div>` : ""}
+      ${wearingLine(kind, it)}
+      ${howHtml(it)}
+      ${f ?`<p class="note" style="color:var(--fg)">${f.how === "name" ? `<b>Own paint:</b> ${esc(fi.who)}, the account it's named after (spotted ${fmtDate(f.at)}).` : f.users.length > MAX_FIRSTS ? `<b>Released:</b> ${f.users.length} tracked streamers got it at once, ${fmtWindow(f.since, f.at)}.` : `<b>First owner:</b> ${esc(fi.who)}, ${fmtWindow(f.since, f.at)}.`}</p>` : ""}
+      ${owners.length ? `<div><p class="eyebrow" style="margin-bottom:8px">People you track who own it</p><div class="chips">${owners.map(o => `<button type="button" class="chip linkish" data-open-user="${esc(o.id)}" style="border:1px solid var(--line-2)">${painted(o.paint, o.name)}</button>`).join("")}</div></div>` : ""}
+      <details class="est"><summary>Owners (estimates)</summary>
+        <div id="dlgPop">${popularityHtml(kind, it)}</div>
+        ${kind === "paints" ? `<div id="dlgOwners"></div>` : ""}
+      </details>
+    </div>`;
+  d.showModal();
+  if (kind !== "paints") return;
+  $("#tryName").oninput = e => { $("#tryOut").innerHTML = paintSpan(it, e.target.value.trim() || it.name); };
+  const fill = () => {
+    const box = $("#dlgOwners"), o = paintOwners?.paints[it.id];
+    if (!box) return;
+    $("#dlgPop").innerHTML = popularityHtml(kind, it);
+    box.innerHTML = o?.top.length ? `<p class="eyebrow" style="margin:0 0 8px">Some owners</p>
+      <div class="chips">${o.top.map(([id, name, on]) => `<button type="button" class="chip linkish" data-open-user="${esc(id)}" style="border:1px solid var(--line-2)">${on ? paintSpan(it, name) : esc(name)}</button>`).join("")}</div>
+      <p class="note" style="margin-top:8px;font-size:12px">The biggest collections Paintwatch has seen with it. Painted names are wearing it now.</p>` : "";
+  };
+  fill();
+  if (!paintOwners) paintOwnersReady.then(fill);
+}
+document.addEventListener("click", e => { const b = e.target.closest("[data-open-user]"); if (b) { if ($("#detail").open) $("#detail").close(); openUser({ kind: "stv", id: b.dataset.openUser }); } });
+$("#detail").addEventListener("click", e => { if (e.target === e.currentTarget || e.target.closest("[data-close]")) e.currentTarget.close(); });
+
+/* ---------- tracking + unlock detection ---------- */
+const watchlist = () => store.get("watch", []);
+const events = () => store.get("events", []);
+
+function snap(u, prev = {}) {
+  return { id: u.id, name: u.name, avatar: u.avatar, paint: u.style.activePaintId || null, badge: u.style.activeBadgeId || null,
+    paints: [...u.paints.keys()], badges: [...u.badges.keys()], checkedAt: Date.now(), addedAt: prev.addedAt || Date.now(), notify: prev.notify ?? true };
+}
+function toggleWatch(u) {
+  const w = watchlist();
+  store.set("watch", w.some(x => x.id === u.id) ? w.filter(x => x.id !== u.id) : [...w, snap(u)]);
+  renderWatch();
+}
+
+// Compares a fresh fetch to the saved snapshot and returns the events it implies.
+function diff(prev, u) {
+  const out = [], base = { at: Date.now(), since: prev.checkedAt || null, who: u.name, uid: u.id, avatar: u.avatar };
+  for (const kind of ["paints", "badges"]) {
+    const before = new Set(prev[kind]);
+    for (const [id, o] of u[kind]) if (!before.has(id)) out.push({ ...base, type: "gain", kind, id, src: o.label || o.cls });
+    for (const id of prev[kind]) if (!u[kind].has(id)) out.push({ ...base, type: "loss", kind, id });
+  }
+  if (prev.paint !== (u.style.activePaintId || null)) out.push({ ...base, type: "equip", kind: "paints", id: u.style.activePaintId || null });
+  if (prev.badge !== (u.style.activeBadgeId || null)) out.push({ ...base, type: "equip", kind: "badges", id: u.style.activeBadgeId || null });
+  return out;
+}
+
+let checking = false, checkTimer = null;
+async function checkAll() {
+  const w = watchlist();
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(checkAll, settings().interval * 60000);
+  if (checking || !w.length) return;
+  checking = true; $("#checkAll").disabled = true;
+  const fresh = [];
+  let failed = 0;
+  for (let i = 0; i < w.length; i++) {
+    $("#watchStatus").textContent = `Checking ${i + 1} of ${w.length}…`;
+    try {
+      const u = await fetchUser({ kind: "stv", id: w[i].id });
+      const ev = diff(w[i], u);
+      if (ev.length && w[i].notify !== false) fresh.push(...ev);
+      else if (ev.length) store.set("events", [...ev, ...events()].slice(0, 500));
+      const cur = watchlist(); const j = cur.findIndex(x => x.id === u.id);
+      if (j >= 0) { cur[j] = snap(u, cur[j]); store.set("watch", cur); } // re-read so edits made mid-check aren't lost
+      if (current?.id === u.id) current = u;
+      personCache.set(u.id, u);
+    } catch { failed++; }
+    if (i < w.length - 1) await new Promise(r => setTimeout(r, 1200)); // stay well under 7TV's rate limits
+  }
+  if (fresh.length) {
+    store.set("events", [...fresh.map(e => ({ ...e, unseen: true })), ...events()].slice(0, 500));
+    notify(fresh);
+  }
+  checking = false; $("#checkAll").disabled = false;
+  const gains = fresh.filter(e => e.type === "gain").length;
+  $("#watchStatus").textContent = `Checked ${fmtClock(Date.now())} · ${gains} new unlock${gains === 1 ? "" : "s"}${failed ? ` · ${failed} failed` : ""}`;
+  if (!$("#view-watch").hidden) renderWatch();
+  updateUnseen();
+}
+
+function itemLabel(e) {
+  const it = e.id ? cat[e.kind].get(e.id) : null;
+  return it?.name || (e.id ? "an unknown item" : "nothing");
+}
+function evText(e) {
+  const thing = e.kind === "paints" ? "paint" : "badge", name = itemLabel(e);
+  return e.type === "gain" ? `${e.who} unlocked the ${name} ${thing}` : e.type === "loss" ? `${e.who} lost the ${name} ${thing}` : `${e.who} switched ${thing} to ${name}`;
+}
+
+/* ---------- notifications ---------- */
+function notify(evs) {
+  const s = settings();
+  const wanted = evs.filter(e => e.type === "gain" || (s.equip && e.type === "equip"));
+  if (!wanted.length) return;
+  for (const e of wanted.slice(0, 4)) toastEvent(e);
+  if (wanted.length > 4) toast(`<div><b>+${wanted.length - 4} more</b><div class="muted">Open Tracking to see everything.</div></div>`, () => show("watch"));
+  if (s.sound) chime();
+  if (s.desktop && "Notification" in window && Notification.permission === "granted") {
+    for (const e of wanted.slice(0, 5)) {
+      const it = e.id ? cat[e.kind].get(e.id) : null;
+      try {
+        const n = new Notification(evText(e), { body: e.src ? "From " + e.src : "Paintwatch", icon: (e.kind === "badges" && it?.img) || e.avatar || undefined, tag: e.uid + e.id + e.type });
+        n.onclick = () => { window.focus(); selectPerson(e.uid); show("watch"); n.close(); };
+      } catch {}
+    }
+  }
+}
+
+let audio;
+function chime() {
+  try {
+    audio ||= new AudioContext();
+    // "bloop": one soft sine that slides up in pitch and fades quickly
+    const t = audio.currentTime, o = audio.createOscillator(), g = audio.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(320, t); o.frequency.exponentialRampToValueAtTime(760, t + .09);
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.18, t + .015); g.gain.exponentialRampToValueAtTime(.0001, t + .22);
+    o.connect(g).connect(audio.destination); o.start(t); o.stop(t + .25);
+  } catch {}
+}
+
+function toast(html, onClick) {
+  const el = document.createElement("div");
+  el.className = "toast"; el.innerHTML = html;
+  if (el.children.length < 2) el.classList.add("solo");
+  el.onclick = () => { onClick?.(); el.remove(); };
+  $("#toasts").append(el);
+  setTimeout(() => el.remove(), 40000); // anything missed is still under the header bell
+}
+function toastEvent(e) {
+  const it = e.id ? cat[e.kind].get(e.id) : null;
+  const nm = it ? (e.kind === "paints" ? paintSpan(it) : esc(it.name)) : "nothing";
+  const verb = e.type === "gain" ? "unlocked" : e.type === "loss" ? "lost" : "is now wearing";
+  toast(`${e.kind === "badges" && it?.img ? `<img src="${esc(it.img)}" alt="" style="border-radius:0">` : e.avatar ? `<img src="${esc(e.avatar)}" alt="">` : "<span></span>"}
+    <div style="min-width:0;overflow-wrap:anywhere">${esc(e.who)} ${verb}<br><b>${nm}</b></div>`, () => { selectPerson(e.uid); show("watch"); });
+}
+
+function updateUnseen() {
+  const n = events().filter(e => e.unseen).length;
+  $("#unseenCount").textContent = n || "";
+  document.title = n ? `(${n}) Paintwatch` : "Paintwatch";
+}
+// Header bell: the latest unlocks and changes from the people you track, so popups you missed aren't lost.
+function renderBell() {
+  const ev = events().slice(0, 25);
+  $("#bellPanel").innerHTML = `<div class="bhead"><span class="eyebrow" style="margin:0">Notifications</span>
+      ${ev.some(e => e.unseen) ? `<button class="btn small" type="button" id="bellRead">Mark all read</button>` : ""}</div>
+    ${ev.length ? ev.map((e, i) => {
+      const it = e.id ? cat[e.kind]?.get(e.id) : null, thing = e.kind === "paints" ? "paint" : "badge";
+      const nm = it ? (e.kind === "paints" ? paintSpan(it) : esc(it.name)) : (e.id ? "an unknown item" : "nothing");
+      const verb = e.type === "gain" ? `unlocked ${thing}` : e.type === "loss" ? `lost ${thing}` : `switched ${thing} to`;
+      return `<button type="button" class="brow${e.unseen ? " unseen" : ""}" data-bell-ev="${i}">${safeUrl(e.avatar) ? `<img src="${esc(e.avatar)}" alt="">` : `<span class="ph"></span>`}
+        <span>${esc(e.who)} ${verb} <b>${nm}</b><small>${fmtAgo(e.at)}</small></span></button>`;
+    }).join("") : `<p class="note" style="padding:8px">Nothing yet. Track people and you'll be told here when they unlock something.</p>`}`;
+}
+$("#bellBtn").onclick = e => {
+  e.stopPropagation();
+  const open = $("#bellPanel").hidden;
+  if (open) renderBell();
+  $("#bellPanel").hidden = !open;
+  $("#bellBtn").setAttribute("aria-expanded", open);
+};
+$("#bellPanel").addEventListener("click", e => {
+  e.stopPropagation();
+  if (e.target.closest("#bellRead")) { markSeen(); renderBell(); return; }
+  const row = e.target.closest("[data-bell-ev]");
+  if (!row) return;
+  const ev = events()[+row.dataset.bellEv];
+  $("#bellPanel").hidden = true; $("#bellBtn").setAttribute("aria-expanded", false);
+  if (ev) { selectPerson(ev.uid); show("watch"); window.scrollTo({ top: 0 }); }
+});
+document.addEventListener("click", () => { if (!$("#bellPanel").hidden) { $("#bellPanel").hidden = true; $("#bellBtn").setAttribute("aria-expanded", false); } });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#bellPanel").hidden) { $("#bellPanel").hidden = true; $("#bellBtn").setAttribute("aria-expanded", false); $("#bellBtn").focus(); } });
+
+function markSeen(uid) {
+  const ev = events();
+  if (ev.some(e => e.unseen && (!uid || e.uid === uid))) store.set("events", ev.map(e => (!uid || e.uid === uid) ? { ...e, unseen: false } : e));
+  updateUnseen();
+}
+
+/* ---------- tracking view: person switcher + timelines ---------- */
+let selected = store.get("selected", "all");
+const personCache = new Map(); // live 7TV data per person, for exact equip times
+function selectPerson(id) { selected = id; store.set("selected", id); }
+
+function renderPeople() {
+  const w = watchlist(), ev = events();
+  if (!["all", "server", "compare"].includes(selected) && !w.some(x => x.id === selected)) selected = "all";
+  const chip = (id, label, img, extra = "") => `<button type="button" class="person" data-person="${esc(id)}" aria-pressed="${selected === id}">${img}<span class="t">${label}</span>${extra}</button>`;
+  $("#people").innerHTML =
+    chip("all", "Everyone", `<span class="ph">${icon("users")}</span>`) +
+    chip("compare", "Compare", `<span class="ph">${icon("swap")}</span>`) +
+    w.map(x => chip(x.id, painted(x.paint, x.name), safeUrl(x.avatar) ? `<img src="${esc(x.avatar)}" alt="">` : `<span class="ph"></span>`, ev.some(e => e.uid === x.id && e.unseen) ? `<span class="dotn" title="New activity"></span>` : "")).join("") +
+    chip("server", "New paints · always-on", `<span class="ph">${icon("radio")}</span>`);
+}
+$("#people").addEventListener("click", e => {
+  const b = e.target.closest("[data-person]");
+  if (!b) return;
+  selectPerson(b.dataset.person); renderWatch(); replay($("#trackMain"));
+});
+// Arrow keys move between people.
+$("#people").addEventListener("keydown", e => {
+  if (!["ArrowLeft", "ArrowRight"].includes(e.key)) return;
+  const bs = $$("#people .person"), i = bs.indexOf(document.activeElement);
+  if (i < 0) return;
+  const n = bs[(i + (e.key === "ArrowRight" ? 1 : -1) + bs.length) % bs.length];
+  n.focus(); n.click();
+});
+
+function eventRow(e, { showWho = true } = {}) {
+  const it = e.id ? cat[e.kind].get(e.id) : null, thing = e.kind === "paints" ? "paint" : "badge";
+  const nm = it ? (e.kind === "paints" ? paintSpan(it) : `${it.img ? `<img class="bi" src="${esc(it.img)}" alt="">` : ""}${esc(it.name)}`) : (e.id ? "an item no longer in the catalog" : "nothing");
+  const who = showWho ? `${painted(paintOf(e.uid), e.who)} ` : "";
+  if (e.type === "new-paint" || e.type === "first") {
+    const many = e.type === "first" && e.count > MAX_FIRSTS;
+    const line = e.type === "new-paint" ? `New paint on 7TV: <b>${nm}</b>`
+      : e.how === "name" ? `${esc(e.who)} has their own paint: <b>${nm}</b>`
+      : many ? `<b>${nm}</b> is out: ${esc(e.who)} got it` : `${painted(paintOf(e.uid), e.who)} got <b>${nm}</b> first`;
+    const sub = e.type === "new-paint" ? `Added ${fmtWindow(e.since, e.at)}. Nobody has it yet.` : e.how === "name" ? `Spotted ${fmtTime(e.at)} on the account it's named after` : `Got it ${fmtWindow(e.since, e.at)}`;
+    return `<div class="tl ${e.type === "first" ? "gain" : "start"}"><span class="dot">${icon(e.type === "first" ? "flag" : "plus")}</span>
+      <div class="what"><div>${line}</div><div class="when">${sub}</div></div></div>`;
+  }
+  const what = e.type === "gain" ? `${who}unlocked ${thing} <b>${nm}</b>` : e.type === "loss" ? `${who}lost ${thing} <b>${nm}</b>` : `${who}switched ${thing} to <b>${nm}</b>`;
+  const when = e.exact ? `<span class="exact">${fmtExact(e.at)}</span> · exact time from 7TV`
+    : e.type === "equip" ? `${fmtWindow(e.since, e.at)}` : `Unlocked ${fmtWindow(e.since, e.at)}${e.src ? " · " + esc(e.src) : ""}`;
+  return `<div class="tl ${e.type}${e.unseen ? " unseen" : ""}"><span class="dot">${icon(e.type === "gain" ? "plus" : e.type === "loss" ? "minus" : "swap")}</span>
+    <div class="what"><div>${what}</div><div class="when">${when}</div></div></div>`;
+}
+
+async function renderPersonMain(x) {
+  const main = $("#trackMain");
+  const p = cat.paints.get(x.paint);
+  const local = events().filter(e => e.uid === x.id && e.type !== "equip");
+  const remote = (serverEvents || []).filter(e => e.uid === x.id && e.type !== "equip");
+  const seen = new Set(local.map(e => e.type + e.kind + e.id));
+  const unlocks = [...local, ...remote.filter(e => !seen.has(e.type + e.kind + e.id))];
+  const head = `<div class="phead">
+      ${safeUrl(x.avatar) ? `<img class="av" src="${esc(x.avatar)}" alt="">` : `<span class="av"></span>`}
+      <div style="min-width:0"><div class="nm">${p ? paintSpan(p, x.name) : esc(x.name)}</div>
+        <div class="sub">${x.paints.length} paints · ${x.badges.length} badges · checked ${fmtAgo(x.checkedAt)}</div></div>
+      <div class="ctl">
+        <button class="btn small" type="button" data-open="${esc(x.id)}">Profile</button>
+        <button class="icon-btn" type="button" data-bell="${esc(x.id)}" aria-pressed="${x.notify !== false}" aria-label="${x.notify !== false ? "Mute" : "Unmute"} ${esc(x.name)}" title="${x.notify !== false ? "Notifications on" : "Muted"}">${icon(x.notify !== false ? "bell" : "bell-off")}</button>
+      </div>
+    </div>`;
+  const build = live => {
+    const equips = (live?.outfits || []).map(o => ({ type: "equip", kind: o.kind, id: o.id, at: o.at, exact: true, uid: x.id, who: x.name }));
+    const all = [...unlocks, ...equips].sort((a, b) => b.at - a.at);
+    return head + `<div class="timeline" style="margin-top:18px">
+      ${all.length ? all.slice(0, 120).map(e => eventRow(e, { showWho: false })).join("") : ""}
+      <div class="tl start"><span class="dot">${icon("flag")}</span><div class="what"><div>Started tracking ${esc(x.name)}</div>
+        <div class="when">${x.addedAt ? fmtTime(x.addedAt) : "earlier"}. 7TV doesn't record when items are unlocked, so unlocks before this can't be dated. Unlock times are the window between two checks; paint and badge switches use 7TV's exact timestamps.</div></div></div>
+    </div>`;
+  };
+  main.innerHTML = build(personCache.get(x.id));
+  if (!personCache.has(x.id)) {
+    try {
+      const live = await fetchUser({ kind: "stv", id: x.id });
+      personCache.set(x.id, live);
+      if (selected === x.id && !$("#view-watch").hidden) main.innerHTML = build(live);
+    } catch {}
+  }
+  markSeen(x.id); renderPeopleDots();
+}
+const renderPeopleDots = () => renderPeople();
+
+/* ---------- compare two collections ---------- */
+let cmp = store.get("compare", []);
+async function renderCompare() {
+  const main = $("#trackMain");
+  const opts = cmpLocal();
+  // Always at least two boxes; the first two start filled from people you track or looked up.
+  while (cmp.length < 2) cmp.push(null);
+  if (!cmp[0]) cmp[0] = opts.find(o => !cmp.includes(o.id))?.id || null;
+  if (!cmp[1]) cmp[1] = opts.find(o => !cmp.includes(o.id))?.id || null;
+  store.set("compare", cmp);
+  const avOf = id => personCache.get(id)?.avatar || opts.find(o => o.id === id)?.avatar;
+  // Each person is a little card: avatar + a search box. "vs" sits between cards; the dashed card adds another person.
+  const pick = (id, i) => `<div class="cmp-pick rise" style="--i:${i}">
+    ${safeUrl(avOf(id)) ? `<img class="pav" src="${esc(avOf(id))}" alt="">` : `<span class="pav">${i + 1}</span>`}
+    <label for="cmp${i}" hidden>Person ${i + 1}</label>
+    <input id="cmp${i}" data-cmp="${i}" value="${esc(cmpName(id))}" placeholder="Type a name" autocomplete="off" spellcheck="false">
+    ${i >= 2 ? `<button class="cmp-x" type="button" data-cmp-drop="${i}" aria-label="Remove this person" title="Remove">${icon("x")}</button>` : ""}
+    <div class="suggest" id="cmpSug${i}" hidden></div></div>`;
+  const ids = cmp.filter(Boolean);
+  main.innerHTML = `<div class="cmp-top">
+      <div><h2 style="font-size:22px">Compare collections</h2><p class="note" style="margin-top:6px">Type part of a name or a Twitch username in each box and click the match. Add up to ${CMP_MAX} people.</p></div>
+      ${cmp.length === 2 ? `<button class="btn small" type="button" id="cmpSwap">${icon("swap")}Swap</button>` : ""}
+    </div>
+    <div class="lineup">
+      ${cmp.map(pick).join(`<span class="vs-tag">vs</span>`)}
+      ${cmp.length < CMP_MAX ? `<button class="cmp-add rise" style="--i:${cmp.length}" type="button" id="cmpAdd" aria-label="Add another person">${icon("plus")}<span>Add person</span></button>` : ""}
+    </div>
+    <div id="cmpBody">${ids.length >= 2 ? `<div class="skel" style="height:260px;border-radius:12px"></div>` : `<div class="empty">Start typing a name in each box, then click the person you want.</div>`}</div>`;
+  if (ids.length < 2) return;
+  const get = async id => personCache.get(id) || fetchUser({ kind: "stv", id }).then(u => (personCache.set(id, u), u));
+  const key = ids.join();
+  let users;
+  try { users = await Promise.all(ids.map(get)); }
+  catch (e) { if ($("#cmpBody")) $("#cmpBody").innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  if (selected !== "compare" || cmp.filter(Boolean).join() !== key || !$("#cmpBody")) return; // picks changed while loading
+  $("#cmpBody").innerHTML = `<div class="enter">${users.length === 2 ? compareHtml(users[0], users[1]) : multiCompareHtml(users)}</div>`;
+  users.forEach(u => { const box = $(`#cmp${cmp.indexOf(u.id)}`)?.closest(".cmp-pick"); if (box && u.avatar && !box.querySelector("img.pav")) box.querySelector(".pav").outerHTML = `<img class="pav" src="${esc(u.avatar)}" alt="">`; });
+}
+const CMP_MAX = 6;
+// Compare pickers: type part of a name, then click a match. People you track and recent lookups come first, then 7TV's search.
+const cmpLocal = () => [...new Map([...watchlist(), ...recents()].map(x => [x.id, x])).values()];
+const cmpName = id => personCache.get(id)?.name || cmpLocal().find(o => o.id === id)?.name || "";
+let cmpTimer, cmpSeq = 0;
+async function cmpSuggest(i) {
+  const box = $(`#cmpSug${i}`), q = $(`#cmp${i}`)?.value.trim().toLowerCase().replace(/^@/, "") || "";
+  if (!box) return;
+  const row = x => `<button type="button" data-cmp-pick="${i}:${esc(x.id)}">${safeUrl(x.avatar) ? `<img src="${esc(x.avatar)}" alt="">` : `<span style="width:24px"></span>`}${aliasName(x)}<small>${esc(x.tag || "")}</small></button>`;
+  const local = cmpLocal().filter(x => !q || x.name.toLowerCase().includes(q)).slice(0, 6).map(x => ({ ...x, tag: watchlist().some(w => w.id === x.id) ? "tracking" : "recent" }));
+  const draw = remote => {
+    const seen = new Set(local.map(x => x.id)), more = (remote || []).filter(x => !seen.has(x.id)).slice(0, 6);
+    box.innerHTML = (local.length ? `<div class="lbl">Yours</div>${local.map(row).join("")}` : "")
+      + (more.length ? `<div class="lbl">On 7TV</div>${more.map(row).join("")}` : remote === undefined && q.length >= 2 ? `<div class="lbl">Searching 7TV…</div>` : "");
+    box.hidden = !box.innerHTML;
+  };
+  draw(q.length >= 2 ? undefined : []);
+  if (q.length < 2) return;
+  const seq = ++cmpSeq, items = (await searchUsers(q)) || [];
+  if (seq !== cmpSeq) return;
+  const tagOf = u => (u.mainConnection?.platform || "").toLowerCase();
+  const found = items.map(u => ({ id: u.id, name: u.mainConnection?.platformDisplayName || u.mainConnection?.platformUsername || "unknown", paint: u.style?.activePaintId, avatar: avatarOf(u), twitch: twitchOf(u), tag: tagOf(u) }));
+  // A Twitch username 7TV's search didn't surface: look that Twitch account up directly.
+  if (/^[a-z0-9_]{2,25}$/.test(q) && !exactMatch(items, q)) {
+    try { const u = await fetchUser({ kind: "twitch", id: await twitchIdFor(q) }); personCache.set(u.id, u); found.unshift({ id: u.id, name: u.name, paint: u.style.activePaintId, avatar: u.avatar, twitch: u.twitch?.platformDisplayName || u.twitch?.platformUsername || q, tag: "twitch" }); } catch {}
+    if (seq !== cmpSeq) return;
+  }
+  draw(found);
+}
+document.addEventListener("focusin", e => { const s = e.target.closest?.("[data-cmp]"); if (s) { s.select(); cmpSuggest(+s.dataset.cmp); } });
+document.addEventListener("input", e => { const s = e.target.closest("[data-cmp]"); if (s) { clearTimeout(cmpTimer); cmpTimer = setTimeout(() => cmpSuggest(+s.dataset.cmp), 250); } });
+document.addEventListener("focusout", e => { const s = e.target.closest?.("[data-cmp]"); if (s) setTimeout(() => { const box = $(`#cmpSug${s.dataset.cmp}`); if (box && !box.contains(document.activeElement)) box.hidden = true; }, 150); });
+document.addEventListener("mousedown", e => { if (e.target.closest("[data-cmp-pick]")) e.preventDefault(); }); // keep focus so the click lands
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-cmp-pick]");
+  if (!b) return;
+  const [i, id] = b.dataset.cmpPick.split(":");
+  cmp = cmp.map((x, j) => j === +i ? id : x === id ? null : x); // a person can only be in one box
+  store.set("compare", cmp); renderCompare();
+});
+document.addEventListener("click", e => {
+  if (e.target.closest("#cmpSwap")) { cmp = [cmp[1], cmp[0]]; store.set("compare", cmp); renderCompare(); }
+  if (e.target.closest("#cmpAdd")) { cmp.push(null); store.set("compare", cmp); renderCompare(); setTimeout(() => $(`#cmp${cmp.length - 1}`)?.focus(), 0); }
+  const drop = e.target.closest("[data-cmp-drop]");
+  if (drop) { cmp.splice(+drop.dataset.cmpDrop, 1); store.set("compare", cmp); renderCompare(); }
+});
+
+function collectionStats(u) {
+  const p = [...u.paints.values()], all = [...p, ...u.badges.values()];
+  const years = [...u.paints.keys(), ...u.badges.keys()].map(ulidTime).filter(Boolean);
+  return {
+    paints: p.length, badges: u.badges.size,
+    bundles: new Set(p.filter(o => o.cls === "Subscription" && /bundle/i.test(o.label || "")).map(o => o.label)).size,
+    events: all.filter(o => o.cls === "Event").length,
+    latest: paintsByNew.slice(0, 30).filter(x => u.paints.has(x.id)).length,
+    oldest: years.length ? new Date(Math.min(...years)).getFullYear() : null,
+  };
+}
+
+// Three or more people: one column each, a row per stat with the leader marked, then shared and unique paints.
+function multiCompareHtml(us) {
+  const st = us.map(collectionStats), n = us.length;
+  const rows = [["Paints", "paints"], ["Badges", "badges"], ["Monthly bundles", "bundles"], ["Event items", "events"], ["Of 30 newest paints", "latest"], ["Oldest item (year)", "oldest", true]];
+  const table = rows.map(([label, k, low], r) => {
+    const vals = st.map(s => s[k]).filter(v => v != null), best = vals.length ? (low ? Math.min(...vals) : Math.max(...vals)) : null;
+    return `<span class="ml" style="--i:${r}">${label}</span>${st.map(s => `<span class="mv${s[k] != null && s[k] === best ? " win" : ""}" style="--i:${r}">${s[k] == null ? "—" : low ? s[k] : nf(s[k])}</span>`).join("")}`;
+  }).join("");
+  const everyone = [...us[0].paints.keys()].filter(id => us.every(u => u.paints.has(id)));
+  const only = us.map(u => [...u.paints.keys()].filter(id => us.every(o => o === u || !o.paints.has(id))));
+  const list = ids => ids.map(id => cat.paints.get(id)).filter(Boolean).sort((x, y) => y.t - x.t)
+    .map(p => `<button type="button" class="chip linkish" data-detail="paints:${esc(p.id)}">${paintSpan(p)}</button>`).join("") || `<span class="muted" style="font-size:13px">none</span>`;
+  return `
+    <div class="mscroll"><div class="mhead" style="--n:${n}"><span></span>${us.map(u => `<div class="cmp-who">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : `<span class="ph"></span>`}
+      <button type="button" class="linkish nm" data-open="${esc(u.id)}">${painted(u.style.activePaintId, u.name)}</button></div>`).join("")}</div>
+    <div class="mtable" style="--n:${n}">${table}</div></div>
+    <div style="margin-top:22px"><p class="eyebrow">Everyone has · ${everyone.length}</p><div class="cmp-list">${list(everyone)}</div></div>
+    <div class="cmp-cols" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">${us.map((u, i) => `<div><p class="eyebrow">Only ${esc(u.name)} · ${only[i].length}</p><div class="cmp-list">${list(only[i])}</div></div>`).join("")}</div>`;
+}
+
+function compareHtml(A, B) {
+  const a = collectionStats(A), b = collectionStats(B);
+  const head = u => `<div class="cmp-who">${u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : `<span class="ph"></span>`}
+    <button type="button" class="linkish nm" data-open="${esc(u.id)}">${painted(u.style.activePaintId, u.name)}</button>
+    <span class="muted mono" style="font-size:12px">${esc(cat.paints.get(u.style.activePaintId)?.name || "no paint on")}</span></div>`;
+  // Butterfly rows: each side's bar grows toward the middle; the bigger value is highlighted (smaller wins for "oldest item").
+  let ri = 0; // row index, for the cascade-in animation
+  const row = (label, x, y, { lowWins = false, fmt = nf } = {}) => {
+    const max = Math.max(x ?? 0, y ?? 0) || 1, win = x === y || x == null || y == null ? 0 : (lowWins ? x < y : x > y) ? -1 : 1;
+    const bar = (v, side) => lowWins ? "" : `<span class="cbar ${side}"><span style="width:${(100 * (v || 0) / max).toFixed(1)}%"></span></span>`;
+    return `<div class="cmp-row" style="--i:${ri++}"><span class="cv l${win === -1 ? " win" : ""}">${x == null ? "—" : fmt(x)}</span>${bar(x, "l")}<span class="cl">${label}</span>${bar(y, "r")}<span class="cv r${win === 1 ? " win" : ""}">${y == null ? "—" : fmt(y)}</span></div>`;
+  };
+  const shared = [...A.paints.keys()].filter(id => B.paints.has(id));
+  const onlyA = [...A.paints.keys()].filter(id => !B.paints.has(id)), onlyB = [...B.paints.keys()].filter(id => !A.paints.has(id));
+  const union = shared.length + onlyA.length + onlyB.length;
+  const sim = union ? Math.round(100 * shared.length / union) : 0;
+  const bShared = [...A.badges.keys()].filter(id => B.badges.has(id)), bA = [...A.badges.keys()].filter(id => !B.badges.has(id)), bB = [...B.badges.keys()].filter(id => !A.badges.has(id));
+  const list = ids => ids.map(id => cat.paints.get(id)).filter(Boolean).sort((x, y) => y.t - x.t)
+    .map(p => `<button type="button" class="chip linkish" data-detail="paints:${esc(p.id)}">${paintSpan(p)}</button>`).join("") || `<span class="muted" style="font-size:13px">none</span>`;
+  const badgeList = ids => ids.map(id => cat.badges.get(id)).filter(b => b?.img).map(b => `<button type="button" class="linkish" data-detail="badges:${esc(b.id)}" title="${esc(b.name)}"><img src="${esc(b.img)}" alt="${esc(b.name)}" loading="lazy"></button>`).join("") || `<span class="muted" style="font-size:13px">none</span>`;
+  return `
+    <div class="cmp-head">${head(A)}<span class="vs">vs</span>${head(B)}</div>
+    <div class="cmp-rows">
+      ${row("paints", a.paints, b.paints)}
+      ${row("badges", a.badges, b.badges)}
+      ${row("monthly bundles", a.bundles, b.bundles)}
+      ${row("event items", a.events, b.events)}
+      ${row("of 30 newest paints", a.latest, b.latest)}
+      ${row("oldest item (year added)", a.oldest, b.oldest, { lowWins: true, fmt: String })}
+    </div>
+    <div style="margin-top:22px">
+      <p class="eyebrow">Paint overlap · ${sim}% the same</p>
+      <div class="venn" role="img" aria-label="${onlyA.length} only ${esc(A.name)}, ${shared.length} shared, ${onlyB.length} only ${esc(B.name)}">
+        <span class="va" style="flex:${onlyA.length || .001}"></span><span class="vs2" style="flex:${shared.length || .001}"></span><span class="vb" style="flex:${onlyB.length || .001}"></span>
+      </div>
+      <div class="venn-key"><span><i class="va"></i>Only ${esc(A.name)} <b class="mono">${onlyA.length}</b></span><span><i class="vs2"></i>Both <b class="mono">${shared.length}</b></span><span><i class="vb"></i>Only ${esc(B.name)} <b class="mono">${onlyB.length}</b></span></div>
+    </div>
+    <div class="cmp-cols">
+      <div><p class="eyebrow">Only ${esc(A.name)}</p><div class="cmp-list">${list(onlyA)}</div></div>
+      <div><p class="eyebrow">Both have</p><div class="cmp-list">${list(shared)}</div></div>
+      <div><p class="eyebrow">Only ${esc(B.name)}</p><div class="cmp-list">${list(onlyB)}</div></div>
+    </div>
+    <div class="cmp-cols" style="margin-top:6px">
+      <div><p class="eyebrow">Badges only ${esc(A.name)} · ${bA.length}</p><div class="cmp-badges">${badgeList(bA)}</div></div>
+      <div><p class="eyebrow">Badges both have · ${bShared.length}</p><div class="cmp-badges">${badgeList(bShared)}</div></div>
+      <div><p class="eyebrow">Badges only ${esc(B.name)} · ${bB.length}</p><div class="cmp-badges">${badgeList(bB)}</div></div>
+    </div>`;
+}
+
+function renderWatch() {
+  renderPeople();
+  $(".track-layout").classList.toggle("wide", selected === "compare"); // Compare gets the full width
+  const w = watchlist(), main = $("#trackMain");
+  $("#watchList").innerHTML = w.length ? w.map(x => `
+    <div class="wrow">
+      ${safeUrl(x.avatar) ? `<img class="av" src="${esc(x.avatar)}" alt="">` : `<span class="av"></span>`}
+      <div style="min-width:0"><button class="n" type="button" data-pick="${esc(x.id)}">${painted(x.paint, x.name)}</button>
+        <div class="sub">${x.paints.length} paints · ${x.badges.length} badges · ${fmtAgo(x.checkedAt)}</div></div>
+      <div class="ctl">
+        <button class="icon-btn" type="button" data-bell="${esc(x.id)}" aria-pressed="${x.notify !== false}" aria-label="${x.notify !== false ? "Mute" : "Unmute"} ${esc(x.name)}" title="${x.notify !== false ? "Notifications on" : "Muted"}">${icon(x.notify !== false ? "bell" : "bell-off")}</button>
+        <button class="icon-btn" type="button" data-drop="${esc(x.id)}" aria-label="Stop tracking ${esc(x.name)}" title="Stop tracking">${icon("x")}</button>
+      </div>
+    </div>`).join("") : `<div class="empty" style="padding:18px">Nobody yet. Look someone up and press <b>Track unlocks</b>, or add names below.</div>`;
+
+  if (selected === "server") {
+    const ev = serverEvents || [];
+    main.innerHTML = `<p class="eyebrow">New paints · always-on checker</p>` + (ev.length
+      ? `<div class="timeline">${ev.slice(0, 150).map(e => eventRow(e)).join("")}</div>`
+      : `<div class="empty">${serverBoard ? "No new paints or creator paints found yet. They show up here after the checker's next runs." : "The always-on checker isn't set up on this site yet (see README.md)."}</div>`);
+    return;
+  }
+  if (selected === "compare") return renderCompare();
+  if (selected !== "all") { const x = w.find(p => p.id === selected); if (x) return renderPersonMain(x); }
+  const ev = events();
+  main.innerHTML = `<p class="eyebrow">Everyone you track</p>` + (ev.length
+    ? `<div class="timeline">${ev.slice(0, 150).map(e => eventRow(e)).join("")}</div>`
+    : `<div class="empty">${w.length ? "No changes yet. The first check saves a starting point for each person, and anything they unlock after that lands here. Pick a name above to see their full timeline." : "Track someone to see their unlocks here."}</div>`);
+  markSeen();
+}
+document.addEventListener("click", e => {
+  const pick = e.target.closest("[data-pick]"), open = e.target.closest("#view-watch [data-open]"), bell = e.target.closest("[data-bell]"), drop = e.target.closest("[data-drop]");
+  if (pick) { selectPerson(pick.dataset.pick); renderWatch(); replay($("#trackMain")); window.scrollTo({ top: 0, behavior: motionOK() ? "smooth" : "auto" }); }
+  if (open) openUser({ kind: "stv", id: open.dataset.open });
+  if (bell) { store.set("watch", watchlist().map(x => x.id === bell.dataset.bell ? { ...x, notify: x.notify === false } : x)); renderWatch(); }
+  if (drop) { store.set("watch", watchlist().filter(x => x.id !== drop.dataset.drop)); renderWatch(); if (current?.id === drop.dataset.drop) renderProfile(); }
+});
+$("#checkAll").onclick = checkAll;
+
+$("#bulkForm").onsubmit = async e => {
+  e.preventDefault();
+  const names = $("#bulk").value.split(/[,\s]+/).filter(Boolean).slice(0, 25);
+  if (!names.length) return;
+  $("#bulk").value = "";
+  let added = 0; const bad = [];
+  for (const n of names) {
+    $("#watchStatus").textContent = `Adding ${n}…`;
+    try {
+      const u = await fetchUser(parseQuery(n));
+      if (!watchlist().some(x => x.id === u.id)) { store.set("watch", [...watchlist(), snap(u)]); personCache.set(u.id, u); added++; renderWatch(); }
+    } catch { bad.push(n); }
+    await new Promise(r => setTimeout(r, 600));
+  }
+  $("#watchStatus").textContent = `Added ${added}${bad.length ? ` · couldn't find ${bad.join(", ")}` : ""}`;
+};
+
+/* ---------- settings ---------- */
+function loadSettings() {
+  const s = settings();
+  $("#setDesktop").checked = s.desktop && "Notification" in window && Notification.permission === "granted";
+  $("#setSound").checked = s.sound; $("#setEquip").checked = s.equip;
+  $("#setInterval").value = String(s.interval);
+  if (!("Notification" in window)) { $("#setDesktop").disabled = true; $("#permNote").textContent = "This browser doesn't support desktop notifications."; }
+  else if (Notification.permission === "denied") $("#permNote").textContent = "Blocked in your browser settings for this site. Allow notifications there to turn this on.";
+}
+const saveSetting = (k, v) => store.set("settings", { ...settings(), [k]: v });
+$("#setDesktop").onchange = async e => {
+  if (e.target.checked) {
+    let p = "denied";
+    try { p = await Notification.requestPermission(); } catch {}
+    if (p !== "granted") { e.target.checked = false; $("#permNote").textContent = p === "denied" ? "Blocked in your browser settings for this site. Allow notifications there to turn this on." : "Permission wasn't granted. Try again."; return; }
+  }
+  saveSetting("desktop", e.target.checked);
+};
+$("#setSound").onchange = e => { saveSetting("sound", e.target.checked); if (e.target.checked) chime(); };
+$("#setEquip").onchange = e => saveSetting("equip", e.target.checked);
+$("#setInterval").onchange = e => { saveSetting("interval", +e.target.value); clearTimeout(checkTimer); checkTimer = setTimeout(checkAll, +e.target.value * 60000); };
+$("#testNotify").onclick = () => {
+  notify([{ at: Date.now(), who: current?.name || "Someone", uid: "test", avatar: current?.avatar, type: "gain", kind: "paints", id: paintsByNew[0]?.id, src: "Test notification" }]);
+};
+
+/* ---------- always-on checker data (written by tracker/check.mjs via GitHub Actions) ---------- */
+let serverBoard = null, serverEvents = null, serverOwners = null, firstsMap = new Map();
+const MAX_FIRSTS = 3; // matches tracker/check.mjs: more at once is a release, not a "first"
+async function loadServerData() {
+  const get = async f => { try { const r = await fetch("data/" + f, { cache: "no-cache", signal: AbortSignal.timeout(10000) }); return r.ok ? await r.json() : null; } catch { return null; } };
+  let firsts;
+  [serverBoard, serverEvents, serverOwners, firsts, community, storeData, sources] = await Promise.all([get("leaderboard.json"), get("events.json"), get("owners.json"), get("firsts.json"), get("community.json"), get("store.json"), get("sources.json")]);
+  firstsMap = new Map((firsts || []).map(f => [f.id, f]));
+  // Per-paint owner counts are about 1 MB, so they load after the page is up.
+  paintOwnersReady = get("paints.json").then(d => { paintOwners = d; if (!$("#view-catalog").hidden) renderCatalog(); });
+  renderAlwaysOn();
+}
+const paintOf = uid => watchlist().find(x => x.id === uid)?.paint || serverBoard?.users.find(x => x.id === uid)?.paint;
+
+function renderAlwaysOn() {
+  const b = serverBoard;
+  $("#alwaysOn").innerHTML = b
+    ? `<p class="eyebrow">Always-on checker</p><div class="srow"><div><div class="t" style="font-weight:600">Watching for new paints</div>
+       <div class="d muted" style="font-size:13px">About every 15 minutes, even with this page closed, it announces each new 7TV paint and finds the creator when a paint is someone's own. Its finds show up in this feed.</div></div>
+       <span class="chip" style="color:var(--good);flex:none"><span class="live-dot"></span>Live</span></div>`
+    : `<p class="eyebrow">Always-on checker</p><div class="d muted" style="font-size:13px">Not set up on this site yet. Once the GitHub Action is running (see README.md), it announces every new 7TV paint and finds creators who get their own, even with this page closed.</div>`;
+}
+
+/* ---------- owner estimates + community stats ---------- */
+let paintOwners = null, paintOwnersReady = Promise.resolve(), community = null, storeData = null, sources = null;
+const communityStat = (kind, id) => community?.[kind]?.items[id] || null; // [owned, wearing]
+
+/* ---------- how to get an item ---------- */
+const money = p => { try { return new Intl.NumberFormat(undefined, { style: "currency", currency: p.currency.toUpperCase() }).format(p.price / 100); } catch { return `${(p.price / 100).toFixed(2)} ${p.currency}`; } };
+const STORE_URL = "https://7tv.app/store";
+// What's on offer right now (from the 7TV store API), then every way owners are known to have got it (from the scan).
+// Each entry: { k: kind, short: card label, text: popup sentence (HTML-safe) }.
+// A creator paint: the checker found the account it's named after owning it, or 7TV's own event for it carries the paint's name.
+const squash = s => String(s || "").toLowerCase().replace(/[\s_]+/g, "");
+function creatorOf(id) {
+  const f = firstsMap.get(id);
+  if (f?.how === "name") return f.users[0].name;
+  // Only account-like names count (one word, no year), so events such as "TwitchCon 2025" or "Beta Tester" stay events.
+  const raw = cat.paints.get(id)?.name || "", name = squash(raw);
+  if (!/^[A-Za-z0-9_]{3,25}$/.test(raw) || /(19|20)\d\d/.test(raw)) return null;
+  const ev = (sources?.items[id] || []).find(l => l.startsWith("event|") && squash(l.slice(6)) === name);
+  return ev ? ev.slice(6) : null;
+}
+function howToGet(id) {
+  const now = [], past = [];
+  for (const p of storeData?.shop || []) if (p.items.includes(id) && p.price != null)
+    now.push({ k: "shop", short: `7TV shop · ${money(p)}`, text: p.bundle ? `Buy the <b>${esc(p.name)}</b> in the <a href="${STORE_URL}" target="_blank" rel="noopener">7TV store</a> for ${money(p)}.` : `Buy it in the <a href="${STORE_URL}" target="_blank" rel="noopener">7TV store</a> for ${money(p)}.` });
+  if (storeData?.monthly.includes(id)) now.push({ k: "monthly", short: "This month's sub paint", text: `Included with a <a href="${STORE_URL}" target="_blank" rel="noopener">7TV subscription</a> this month.` });
+  const g = storeData?.gift;
+  if (g?.items.includes(id)) now.push({ k: "gift", short: `${g.name} · until ${fmtDate(Date.parse(g.end))}`, text: `Free-gift campaign <b>${esc(g.name)}</b>: gift ${g.recipients} 7TV subs before ${fmtDate(Date.parse(g.end))}.` });
+  const creator = creatorOf(id);
+  if (creator) past.push({ k: "creator", short: `Creator paint · ${creator}`, text: `Creator paint for <b>${esc(creator)}</b>. These are usually given out by the creator (giveaways, codes, events on their stream).` });
+  const labels = sources?.items[id] || [];
+  for (const l of labels) {
+    const [t, n] = [l.slice(0, l.indexOf("|")), l.slice(l.indexOf("|") + 1)];
+    if (creator && (t === "subscription" || (t === "event" && squash(n) === squash(creator)))) continue; // already said by the creator line
+    if (t === "bundle") past.push({ k: "bundle", short: n.replace(/ Paint Bundle$/i, " bundle"), text: `Came in the <b>${esc(n)}</b> for 7TV subscribers.` });
+    else if (t === "event") past.push({ k: "event", short: `Event · ${n}`, text: `Reward from the <b>${esc(n)}</b> event.` });
+    else if (t === "subscriber") past.push({ k: "subscriber", short: "7TV sub reward", text: `7TV subscriber reward (${esc(n)}).` });
+    else if (t === "subscription") past.push({ k: "subscription", short: "Subscriber drop", text: "Given to everyone subscribed to 7TV at the time." });
+    else if (t === "shop" && !now.some(x => x.k === "shop")) past.push({ k: "shop", short: "7TV shop (not on sale now)", text: "Was sold in the 7TV store; it isn't on sale right now." });
+  }
+  // Direct grants and team roles only count when there's no public way to get it.
+  if (!past.length && labels.length) past.push({ k: "granted", short: "Given by 7TV", text: labels.some(l => l.startsWith("role|")) ? "Comes with a 7TV team role." : "Given out directly by 7TV, for example to contributors, partners or contest winners." });
+  return { now, past, known: now.length + past.length > 0 };
+}
+function howShort(p) {
+  const h = howToGet(p.id);
+  return h.now[0]?.short || h.past[0]?.short || (isUpcoming(p) ? "Not out yet" : "Source not known yet");
+}
+const HOW_FILTERS = { now: h => h.now.length, shop: h => h.now.some(x => x.k === "shop"), bundle: h => h.past.some(x => x.k === "bundle"), event: h => h.past.some(x => x.k === "event"), creator: h => h.past.some(x => x.k === "creator"), granted: h => h.past.some(x => x.k === "granted"), unknown: h => !h.known };
+
+/* ---------- paints catalog: upcoming + all + search ---------- */
+// "Upcoming" = added to 7TV recently and owned by none of the always-on streamers yet (they get each monthly bundle on release).
+// Without checker data, fall back to recently added paints that the people you track don't own.
+function isUpcoming(p) {
+  if (Date.now() - p.t > UPCOMING_DAYS * 864e5 || firstsMap.has(p.id) || communityStat("paints", p.id) || paintOwners?.paints[p.id] || sources?.items[p.id] || storeData?.monthly.includes(p.id)) return false;
+  if (serverOwners) return !serverOwners.paints[p.id];
+  const w = watchlist();
+  return w.length > 0 && !w.some(x => x.paints.includes(p.id));
+}
+let catList = [], catShown = 0;
+const CAT_CHUNK = 72;
+// How a first reads: their own paint, a release to many at once, or one to three people getting it first.
+function firstInfo(f) {
+  const names = f.users.map(u => u.name);
+  if (f.how === "name") return { flag: "own", label: "their own paint", line: `Own paint: ${names[0]}`, who: names[0] };
+  if (f.users.length > MAX_FIRSTS) return { flag: "out", label: "released", line: `${f.users.length} tracked streamers got it at once`, who: null };
+  return { flag: "first", label: "first", line: `First: ${names.join(" & ")}`, who: names.join(" & ") };
+}
+
+function renderCatalog() {
+  // Banner: every paint as a tiny swatch, newest first (built once).
+  if (!$("#catMosaic").childElementCount && paintsByNew.length)
+    $("#catMosaic").innerHTML = paintsByNew.map(p => `<i style='${swatchStyle(p)}'></i>`).join("")
+      + `<div class="mosaic-title"><b>${nf(paintsByNew.length)} paints</b><span>every name paint on 7TV, newest first</span></div>`;
+  const q = $("#catQ").value.trim().toLowerCase();
+  const fl = paintsByNew.map(p => [p, creatorOf(p.id)]).filter(([p, c]) => c && (!q || p.name.toLowerCase().includes(q) || c.toLowerCase().includes(q)));
+  $("#firstsWrap").hidden = !fl.length;
+  $("#firsts").innerHTML = fl.map(([p, c], i) => `<button type="button" class="item rise" style="--i:${i}" data-detail="paints:${esc(p.id)}"><span class="flag own">creator</span>
+    <div class="swatch" style='${swatchStyle(p)}'></div><div class="well">${paintSpan(p, c)}</div>
+    <div class="meta"><b>${esc(p.name)}</b><span class="src1">Creator: ${esc(c)}</span><span class="row2"><span>added ${fmtDate(p.t)}</span>${wearingTag("paints", p.id)}</span></div></button>`).join("");
+  const up = paintsByNew.filter(isUpcoming).filter(p => !q || p.name.toLowerCase().includes(q));
+  $("#upcomingWrap").hidden = !up.length && !!q;
+  $("#upNote").textContent = serverOwners
+    ? `Paints added to 7TV in the last ${UPCOMING_DAYS} days that none of the ${serverOwners.users} streamers the checker follows own yet. Most are next month's bundle or an event reward, though some may be one-off paints; 7TV doesn't publish release dates.`
+    : `Paints added to 7TV in the last ${UPCOMING_DAYS} days that nobody you track owns yet. Release dates aren't published.`;
+  $("#upcoming").innerHTML = up.length ? up.map((p, i) => itemCard(p, "paints", howShort(p), { flag: "soon", i })).join("") : `<div class="empty">Nothing upcoming right now. Every recently added paint is already owned by someone.</div>`;
+  const avail = paintsByNew.filter(p => howToGet(p.id).now.length && (!q || p.name.toLowerCase().includes(q)));
+  $("#nowWrap").hidden = !avail.length;
+  $("#nowGrid").innerHTML = avail.map((p, i) => itemCard(p, "paints", howShort(p), { flag: "now", i })).join("");
+  catList = q ? paintsByNew.filter(p => p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q)) : paintsByNew;
+  const how = $("#catHow").value;
+  if (HOW_FILTERS[how]) catList = catList.filter(p => HOW_FILTERS[how](howToGet(p.id)));
+  const sort = $("#catSort").value, by = i => p => communityStat("paints", p.id)?.[i] ?? -1;
+  if (sort === "worn" || sort === "owned") { const k = by(sort === "worn" ? 1 : 0); catList = catList.slice().sort((a, b) => k(b) - k(a) || b.t - a.t); }
+  else if (sort === "name") catList = catList.slice().sort((a, b) => a.name.localeCompare(b.name));
+  $("#allTitle").textContent = q || HOW_FILTERS[how] ? `${nf(catList.length)} paint${catList.length === 1 ? "" : "s"}${q ? ` matching “${$("#catQ").value.trim()}”` : ""}` : `All ${nf(paintsByNew.length)} paints`;
+  $("#catNote").textContent = "Each card says how the paint is obtained: what's on offer right now from 7TV's store, otherwise how owners got it. "
+    + `"Wearing" counts come from 7database.com (PotatBotat's ${community ? nf(community.paints.users) : ""} tracked users). `
+    + (sort === "worn" || sort === "owned" ? "Paints nobody there is wearing come last. " : "")
+    + "Click a paint for details or to try it on a name.";
+  catShown = 0; $("#catGrid").innerHTML = "";
+  moreCatalog();
+}
+function moreCatalog() {
+  if (catShown >= catList.length) { if (!catList.length) $("#catGrid").innerHTML = `<div class="empty" style="grid-column:1/-1">No paint matches that search.</div>`; return; }
+  const next = catList.slice(catShown, catShown + CAT_CHUNK);
+  $("#catGrid").insertAdjacentHTML("beforeend", next.map((p, i) => itemCard(p, "paints", howShort(p), { flag: isUpcoming(p) ? "soon" : howToGet(p.id).now.length ? "now" : null, i })).join(""));
+  catShown += next.length;
+}
+let catTimer;
+$("#catQ").oninput = () => { clearTimeout(catTimer); catTimer = setTimeout(renderCatalog, 120); };
+$("#catSort").onchange = renderCatalog;
+// Any of the 1,066 paints, image paints included.
+$("#catRandom").onclick = () => { const p = paintsByNew[Math.floor(Math.random() * paintsByNew.length)]; if (p) openDetail("paints", p); };
+$("#catHow").onchange = renderCatalog;
+// Load more paints as the end of the grid scrolls into view.
+new IntersectionObserver(es => { if (es[0].isIntersecting && !$("#view-catalog").hidden && catList.length) moreCatalog(); }, { rootMargin: "800px" }).observe($("#catSentinel"));
+
+/* ---------- routing ---------- */
+function movePill() {
+  const b = $("#tabs [aria-selected=true]"), pill = $("#tabPill");
+  if (!b) { pill.style.width = "0"; return; } // home has no tab
+  pill.style.left = b.offsetLeft + "px"; pill.style.width = b.offsetWidth + "px";
+}
+window.addEventListener("resize", movePill);
+function show(view) {
+  $$("[data-view]").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view));
+  movePill();
+  $$("[data-panel]").forEach(p => { const on = p.dataset.panel === view; if (on && p.hidden) replay(p); p.hidden = !on; });
+  if (view === "home") renderHome();
+  if (view === "profile" && !current && !$("#profQ")) renderProfile(); // nobody looked up yet: show the search page
+  if (view === "catalog") renderCatalog();
+  if (view === "watch") renderWatch();
+  if (view === "home") setUrl({});
+  else if (view !== "profile") setUrl({ v: view });
+  else setUrl(current ? { u: current.twitch?.platformUsername || current.id } : { v: "profile" });
+}
+// The Profile tab always opens on the search page; a profile shows only after a lookup or from a profile link.
+$$("[data-view]").forEach(b => b.onclick = () => { if (b.dataset.view === "profile") current = null; show(b.dataset.view); });
+$("#brand").onclick = () => { show("home"); window.scrollTo({ top: 0 }); };
+document.addEventListener("click", e => { const b = e.target.closest("[data-go]"); if (b) { if (b.dataset.go === "profile") current = null; show(b.dataset.go); window.scrollTo({ top: 0 }); } });
+$("#toTop").onclick = () => window.scrollTo({ top: 0, behavior: motionOK() ? "smooth" : "auto" });
+$("#footYear").textContent = new Date().getFullYear();
+
+const shareUrl = u => { const url = new URL(location.href); url.search = "?u=" + encodeURIComponent(u.twitch?.platformUsername || u.id); url.hash = ""; return url.href; };
+function setUrl(params) {
+  try { const url = new URL(location.href); url.search = new URLSearchParams(params).toString(); url.hash = ""; if (url.href !== location.href) history.pushState(params, "", url); } catch {}
+}
+window.addEventListener("popstate", () => route(false));
+function route(first) {
+  const p = new URLSearchParams(location.search);
+  if (p.get("u")) return openUser(p.get("u"), { push: false });
+  if (p.get("v") === "profile") current = null;
+  show(["watch", "catalog", "profile"].includes(p.get("v")) ? p.get("v") : "home");
+}
+
+/* ---------- home page ---------- */
+let tryPaint = null, deckTimer = null;
+function renderHome() {
+  if (!paintsByNew.length) return;
+  dealDeck();
+  tryPaint ||= randomPaint();
+  paintTry();
+  const wearing = community ? Object.values(community.paints.items).reduce((s, x) => s + x[1], 0) : 0;
+  $("#hhStats").innerHTML = [`<span><b>${nf(cat.paints.size)}</b> paints</span>`, `<span><b>${nf(cat.badges.size)}</b> badges</span>`,
+    community ? `<span><b>${nf(wearing)}</b> people wearing a paint right now</span>` : ""].join("");
+  const now = paintsByNew.filter(p => howToGet(p.id).now.length);
+  $("#homeNowWrap").hidden = !now.length;
+  $("#homeNow").innerHTML = now.map((p, i) => itemCard(p, "paints", howShort(p), { flag: "now", i })).join("");
+  $("#homeFresh").innerHTML = paintsByNew.slice(0, 12).map((p, i) => itemCard(p, "paints", howShort(p), { i })).join("");
+  // Most worn, from 7database's PotatBotat stats.
+  const top = community ? Object.entries(community.paints.items).filter(([id]) => cat.paints.has(id)).sort((a, b) => b[1][1] - a[1][1]).slice(0, 8) : [];
+  const max = top[0]?.[1][1] || 1;
+  $("#homeWorn").innerHTML = top.length ? top.map(([id, [, w]], i) => { const p = cat.paints.get(id); return `<button type="button" class="worn-row" style="--i:${i}" data-detail="paints:${esc(id)}">
+      <span class="rk">${i + 1}</span><span class="nm">${paintSpan(p)}</span><span class="wbar"><span style="width:${(100 * w / max).toFixed(1)}%"></span></span><span class="n">${nf(w)}</span></button>`; }).join("")
+    : `<p class="note">Wearing stats will show up once the always-on checker has fetched them.</p>`;
+  $("#homeWornNote").innerHTML = community ? `People wearing each paint right now, out of ${nf(community.paints.users)} users PotatBotat tracks (via <a href="https://7database.com/stats" target="_blank" rel="noopener">7database.com</a>).` : "";
+  const w = watchlist();
+  $("#homeTracked").innerHTML = w.length ? w.map(x => `<button type="button" class="chip linkish" data-open-user="${esc(x.id)}">${painted(x.paint, x.name)}</button>`).join("") : "";
+}
+// The deck: seven random paint chips fanned out; shuffles itself every few seconds while home is open.
+function dealDeck() {
+  const n = matchMedia("(max-width: 680px)").matches ? 5 : 7, mid = (n - 1) / 2, used = new Set();
+  const cards = Array.from({ length: n }, () => { let p; do p = randomPaint(); while (used.has(p) && used.size < readablePaints().length); used.add(p); return p; });
+  $("#deck").innerHTML = cards.map((p, i) => `<button type="button" class="deck-card" style="--r:${((i - mid) * 9).toFixed(1)}deg;--i:${i}" data-detail="paints:${esc(p.id)}" title="${esc(p.name)}">
+    <span class="swatch" style='${swatchStyle(p)}'></span><span class="well">${paintSpan(p, p.name)}</span><span class="lbl">${esc(p.name)}</span></button>`).join("");
+  clearTimeout(deckTimer);
+  if (motionOK()) deckTimer = setTimeout(() => { if (!$("#view-home").hidden && !$("#deck").matches(":hover") && !document.hidden) dealDeck(); else deckTimer = setTimeout(dealDeck, 3000); }, 7000);
+}
+function paintTry() {
+  if (!tryPaint) return;
+  const name = $("#homeTry").value.trim();
+  $("#tryShow").innerHTML = paintSpan(tryPaint, name || "your name");
+  $("#heroWord").innerHTML = paintSpan(tryPaint, name || "your name");
+  $("#tryPaintName").textContent = tryPaint.name;
+  $("#tryHow").textContent = howShort(tryPaint);
+}
+$("#homeTry").oninput = paintTry;
+$("#tryNext").onclick = () => { tryPaint = randomPaint(tryPaint); paintTry(); };
+$("#tryOpen").onclick = () => tryPaint && openDetail("paints", tryPaint);
+$("#deckShuffle").onclick = dealDeck;
+$("#homeLookup").onsubmit = e => { e.preventDefault(); const v = $("#homeQ").value; if (v.trim()) openUser(v); };
+
+const status = (msg, kind) => {
+  const s = $("#status");
+  s.hidden = !msg; s.className = "status" + (kind === "err" ? " err" : "");
+  s.innerHTML = msg ? (kind === "load" ? `<span class="spin"></span>` : "") + `<span>${esc(msg)}</span>` : "";
+};
+
+let lookupSeq = 0;
+async function openUser(input, { push = true, quiet = false } = {}) {
+  const seq = ++lookupSeq;
+  let key;
+  try { key = typeof input === "string" ? parseQuery(input) : input; } catch (e) { status(e.message, "err"); return; }
+  if (!quiet) { show("profile"); if (!current || push) profileSkeleton(); }
+  if (!quiet) status("Looking up " + (key.login || key.id) + "…", "load");
+  try {
+    const u = await fetchUser(key);
+    if (seq !== lookupSeq) return; // a newer lookup started meanwhile
+    current = u; remember(u);
+    own = { ...own, q: "", src: "", limit: 48 };
+    status(""); renderProfile();
+    if (!quiet && push) setUrl({ u: u.twitch?.platformUsername || u.id });
+    if (!quiet) window.scrollTo({ top: 0 });
+  } catch (e) {
+    if (seq !== lookupSeq) return;
+    if (!quiet) status(e.message, "err");
+    renderProfile();
+  }
+}
+$("#lookupForm").onsubmit = e => { e.preventDefault(); $("#suggest").hidden = true; $("#q").blur(); openUser($("#q").value); };
+
+document.addEventListener("visibilitychange", () => { if (!document.hidden && !$("#view-watch").hidden) renderWatch(); });
+window.addEventListener("storage", e => { if (e.key === "pw:events") { updateUnseen(); if (!$("#view-watch").hidden) renderWatch(); } }); // other open tabs
+
+// Spotlight follows the cursor over paint cards.
+document.addEventListener("pointermove", e => {
+  const el = e.target.closest?.(".item");
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  el.style.setProperty("--mx", e.clientX - r.left + "px");
+  el.style.setProperty("--my", e.clientY - r.top + "px");
+}, { passive: true });
+
+// The logo wears a random paint on every visit. Skip image paints and ones too dark to read on the header.
+const luminance = hex => { const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+// Paints that read well as text: no image paints, mostly opaque colors (#RRGGBBAA), and at least one bright color.
+let readable = null;
+function readablePaints() {
+  const opaque = p => (p.data?.layers || []).every(l => [l.ty?.color, ...(l.ty?.stops || []).map(s => s.color)].filter(Boolean).every(c => c.hex.length < 9 || parseInt(c.hex.slice(7, 9), 16) >= 0xcc));
+  return readable ||= paintsByNew.filter(p => !paintCss(p).img && opaque(p) && (paintColors(p) || []).some(c => luminance(c) > 0.45));
+}
+const randomPaint = (not) => { const pool = readablePaints().filter(p => p !== not); return pool[Math.floor(Math.random() * pool.length)]; };
+function randomBrand() {
+  const p = randomPaint();
+  if (!p) return;
+  $("#brand").innerHTML = paintSpan(p, "Paintwatch");
+  $("#brand").title = `Paintwatch · wearing ${p.name}`;
+  // The same paint becomes this visit's accent stripe under section headings.
+  document.documentElement.style.setProperty("--stripe", swatchStyle(p).match(/background-image:([^;]*)/)[1]);
+  $("#footPaint").innerHTML = `The logo is wearing <button type="button" class="linkish" data-detail="paints:${esc(p.id)}">${paintSpan(p)}</button> this visit. Reload for another.`;
+}
+
+// Light/dark switch. The <head> script already applied the saved or system choice; this keeps the button in sync.
+function setTheme(t, save) {
+  document.documentElement.dataset.theme = t;
+  $("#themeBtn").setAttribute("aria-pressed", t === "dark");
+  $("#themeBtn span").textContent = t === "dark" ? "Light" : "Dark";
+  if (save) store.set("theme", t);
+}
+$("#themeBtn").onclick = () => { setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true); movePill(); };
+setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light", false);
+
+(async () => {
+  loadSettings(); updateUnseen(); movePill();
+  try { await loadCatalog().catch(() => loadCatalog()); } // one retry: the catalog is a big request and occasionally stalls
+  catch (e) { status("Couldn't load the 7TV catalog. " + e.message, "err"); return; }
+  randomBrand();
+  status("");
+  await loadServerData();
+  await route(true);
+  checkAll();
+})();
+</script>
+</body>
+</html>

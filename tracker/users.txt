@@ -1,0 +1,3 @@
+# Optional: Twitch usernames (or numeric Twitch IDs) to watch for unlocks, one per line.
+# Empty by default: the checker watches every new 7TV paint and finds creators who get their own paint.
+# Anyone listed here also gets "X unlocked Y" posts in Discord. Lines starting with # are ignored.
