@@ -986,7 +986,8 @@
    "event|XDX global event"
   ],
   "01H9K7QT0R0002HW4KQ824X53V": [
-   "event|Gift Sub 2023"
+   "event|Gift Sub 2023",
+   "subscription|"
   ],
   "01J18EPE0R0008X86EB8S5ZX6G": [
    "event|Freedom 2024 Paint"
@@ -1101,11 +1102,13 @@
    "event|900 Paint Streamer Event"
   ],
   "01KC2M1QNZ1Q1E47KPM14VSERH": [
-   "event|Evelone Event"
+   "event|Evelone Event",
+   "subscription|"
   ],
   "01KNA91M442MJHKC3RR4WFFFXZ": [
    "event|Easter Gifting 2026",
-   "event|Test Summer Bundle"
+   "event|Test Summer Bundle",
+   "subscription|"
   ],
   "01KSJPW7PJZCRGMJJNH02GA4PP": [
    "subscription|"
@@ -1131,10 +1134,12 @@
    "event|Dima Paint Giveaway"
   ],
   "01KH9GC158GSBAHYSQF2SQM8HT": [
-   "event|Valentine's Gifting 2026"
+   "event|Valentine's Gifting 2026",
+   "subscription|"
   ],
   "01M41S5QTX4S8D71Y810N3W2XG": [
-   "event|renyan"
+   "event|renyan",
+   "subscription|"
   ],
   "01M57S0EVCG5GMMQ35C1N0GT0A": [
    "subscription|"
@@ -1149,7 +1154,8 @@
    "subscription|"
   ],
   "01M5Z51FCJMP5SR1N0Q9M27XRT": [
-   "event|Halloween Gifting 2026"
+   "event|Halloween Gifting 2026",
+   "subscription|"
   ],
   "01JZX7H1H6QERDGF8QRA2ZAKPW": [
    "event|2025 Summer Gifter"
@@ -1159,7 +1165,8 @@
    "subscription|"
   ],
   "01KH9H6MEQMRS1N2S3HT3TJ9JQ": [
-   "event|Valentine's Gifting 2026"
+   "event|Valentine's Gifting 2026",
+   "subscription|"
   ],
   "01KV1CVJFZ3064N4NP7A4R8GAX": [
    "subscription|"
@@ -1172,7 +1179,8 @@
    "subscription|"
   ],
   "01M5YSQB8TANE5B8VJ1FXCHSP1": [
-   "event|Halloween Gifting 2026"
+   "event|Halloween Gifting 2026",
+   "subscription|"
   ],
   "01M5YV7SZHT616DKV3FC5M2850": [
    "subscription|"
@@ -1225,7 +1233,8 @@
   ],
   "01JW74E7R8A4RBTJEFH9V81JDN": [
    "event|TwitchCon 2025 Rotterdam",
-   "granted|"
+   "granted|",
+   "subscription|"
   ],
   "01K6ZYS5X6TF6EGK85Y9ZZR8YC": [
    "event|SE Party - TC San Diego 2025",
@@ -1486,7 +1495,8 @@
   "01JG7HNY3EXYD9ANZ3HFAC6STJ": [
    "event|NNYS 2025 - Golden Gondola",
    "event|NNYS chat raffle",
-   "event|test"
+   "event|test",
+   "subscription|"
   ],
   "01K8NJ39SW27ADSY0003EN4Q1Q": [
    "subscription|"
@@ -1541,7 +1551,8 @@
   ],
   "01FQB6K5T0000BDD0YMN21KEXX": [
    "granted|",
-   "role|Moderator"
+   "role|Moderator",
+   "subscription|"
   ],
   "01GAFARYP0000E8VNG1S1RMTBJ": [
    "role|Moderator"
