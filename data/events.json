@@ -1,5 +1,12 @@
 [
  {
+  "type": "new-paint",
+  "kind": "paints",
+  "id": "01M6Y0PZ1QBW9XJ30HHRARBHD6",
+  "at": 1794158125010,
+  "since": 1794156213153
+ },
+ {
   "type": "first",
   "kind": "paints",
   "id": "01M41S5QTX4S8D71Y810N3W2XG",
