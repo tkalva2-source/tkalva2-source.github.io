@@ -1,6 +1,6 @@
 {
- "updatedAt": "2026-11-09T16:43:47.177Z",
- "accounts": 35029,
+ "updatedAt": "2026-11-09T20:18:11.298Z",
+ "accounts": 35027,
  "excluded": 3,
  "paints": {
   "01GPF2WSER00027RY0HK5QCJAC": {
@@ -1053,7 +1053,7 @@
   },
   "01J3NRBKA80007828BBQM4JVC7": {
    "owners": 12982,
-   "wearing": 82,
+   "wearing": 83,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -7340,7 +7340,7 @@
    ]
   },
   "01M17P95D5J3DZZJ15SVX5A4Z9": {
-   "owners": 25809,
+   "owners": 25807,
    "wearing": 32,
    "top": [
     [
@@ -7471,7 +7471,7 @@
    ]
   },
   "01M19CDBRH9GW59HQQT9B4J16Y": {
-   "owners": 25809,
+   "owners": 25807,
    "wearing": 551,
    "top": [
     [
@@ -7602,7 +7602,7 @@
    ]
   },
   "01M19CN02DVWS61PAVTEGT0KM0": {
-   "owners": 25809,
+   "owners": 25807,
    "wearing": 82,
    "top": [
     [
@@ -7733,8 +7733,8 @@
    ]
   },
   "01M19D4SHRVM6MWQ4PJB9TG97T": {
-   "owners": 25809,
-   "wearing": 927,
+   "owners": 25807,
+   "wearing": 926,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -7864,7 +7864,7 @@
    ]
   },
   "01M19D65G68Z3FGNQP0PGQ3GT6": {
-   "owners": 25809,
+   "owners": 25807,
    "wearing": 263,
    "top": [
     [
@@ -7995,7 +7995,7 @@
    ]
   },
   "01M3QBDT5898F5FE44393ADKQ2": {
-   "owners": 29863,
+   "owners": 29860,
    "wearing": 240,
    "top": [
     [
@@ -8126,8 +8126,8 @@
    ]
   },
   "01M3QBDYT0V77E2TXGW3SP6AEK": {
-   "owners": 29863,
-   "wearing": 1007,
+   "owners": 29860,
+   "wearing": 1006,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -8257,7 +8257,7 @@
    ]
   },
   "01M3QBE4EMJZJQ558B9XTYKH4A": {
-   "owners": 29863,
+   "owners": 29860,
    "wearing": 213,
    "top": [
     [
@@ -8388,7 +8388,7 @@
    ]
   },
   "01M3QBE8ZZAC1WF3CR4RNGGQVX": {
-   "owners": 29863,
+   "owners": 29860,
    "wearing": 367,
    "top": [
     [
@@ -8519,8 +8519,8 @@
    ]
   },
   "01M3QBESQ89Z6DDENSWNYJDB1D": {
-   "owners": 29863,
-   "wearing": 582,
+   "owners": 29860,
+   "wearing": 581,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -8650,7 +8650,7 @@
    ]
   },
   "01M66TXPTF6P98JEYN4AEKZHX4": {
-   "owners": 30888,
+   "owners": 30886,
    "wearing": 17,
    "top": [
     [
@@ -8781,8 +8781,8 @@
    ]
   },
   "01M66TXW8TR5M8610W4NRS4ZEH": {
-   "owners": 30888,
-   "wearing": 520,
+   "owners": 30886,
+   "wearing": 518,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -8912,7 +8912,7 @@
    ]
   },
   "01M66TY0JHHHRC9TRQ9XCXX6RY": {
-   "owners": 30888,
+   "owners": 30886,
    "wearing": 439,
    "top": [
     [
@@ -9043,7 +9043,7 @@
    ]
   },
   "01M66TY810KZS3FBHS210G52DW": {
-   "owners": 30888,
+   "owners": 30886,
    "wearing": 153,
    "top": [
     [
@@ -9174,7 +9174,7 @@
    ]
   },
   "01M66TYCCW1KJHERVT03TXTXDN": {
-   "owners": 30888,
+   "owners": 30886,
    "wearing": 316,
    "top": [
     [
@@ -13105,7 +13105,7 @@
   },
   "01JZ0RTPQZ4TAQ8NCGY4WSR8H7": {
    "owners": 17953,
-   "wearing": 14,
+   "wearing": 13,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -15463,7 +15463,7 @@
   },
   "01K6ZYS5X6TF6EGK85Y9ZZR8YC": {
    "owners": 617,
-   "wearing": 81,
+   "wearing": 80,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -20703,7 +20703,7 @@
   },
   "01KNA91M442MJHKC3RR4WFFFXZ": {
    "owners": 1258,
-   "wearing": 219,
+   "wearing": 220,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -21358,7 +21358,7 @@
   },
   "01KQARKPY5QDJTKEQ4SST2450F": {
    "owners": 23295,
-   "wearing": 178,
+   "wearing": 177,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -22274,7 +22274,7 @@
    ]
   },
   "01KW7FPRMTQV8DFTAEDGRKSB9G": {
-   "owners": 24157,
+   "owners": 24156,
    "wearing": 10,
    "top": [
     [
@@ -22405,7 +22405,7 @@
    ]
   },
   "01KW7G4C5PGX30FFDBRXDNSY07": {
-   "owners": 24157,
+   "owners": 24156,
    "wearing": 101,
    "top": [
     [
@@ -22536,8 +22536,8 @@
    ]
   },
   "01KW7H0JWNJB13QMYWX7388149": {
-   "owners": 24157,
-   "wearing": 479,
+   "owners": 24156,
+   "wearing": 480,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -22667,7 +22667,7 @@
    ]
   },
   "01KW7KH09JXWYBNGFCBJMWDQYH": {
-   "owners": 24157,
+   "owners": 24156,
    "wearing": 63,
    "top": [
     [
@@ -22798,7 +22798,7 @@
    ]
   },
   "01KW7KH75HRAR2XY09ZN31P108": {
-   "owners": 24157,
+   "owners": 24156,
    "wearing": 54,
    "top": [
     [
@@ -22929,7 +22929,7 @@
    ]
   },
   "01KYQHQPRCXR4DE9TRCD8J66W9": {
-   "owners": 25631,
+   "owners": 25629,
    "wearing": 132,
    "top": [
     [
@@ -23060,7 +23060,7 @@
    ]
   },
   "01KYQHQZDSYDY8D8Z0Y10W3F0Y": {
-   "owners": 25631,
+   "owners": 25629,
    "wearing": 183,
    "top": [
     [
@@ -23191,7 +23191,7 @@
    ]
   },
   "01KYQHRD3TXQ1WDK8E2QE6MC9Q": {
-   "owners": 25631,
+   "owners": 25629,
    "wearing": 155,
    "top": [
     [
@@ -23322,7 +23322,7 @@
    ]
   },
   "01KYQHRHWH6S9EHZ3E0A8K9M2G": {
-   "owners": 25631,
+   "owners": 25629,
    "wearing": 35,
    "top": [
     [
@@ -23453,7 +23453,7 @@
    ]
   },
   "01KYQHRNWXB75JTZGM0ZCVV4ZV": {
-   "owners": 25631,
+   "owners": 25629,
    "wearing": 142,
    "top": [
     [
@@ -28825,7 +28825,7 @@
   },
   "01HGHA0FA0000A0RAV1AFV8A9Q": {
    "owners": 10647,
-   "wearing": 318,
+   "wearing": 317,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -32755,7 +32755,7 @@
   },
   "01M5CDANMW5HWQG8NA5TRBJFZ3": {
    "owners": 1749,
-   "wearing": 131,
+   "wearing": 132,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -38388,7 +38388,7 @@
   },
   "01HEBYHWN0000EV2G1SJ85XJQR": {
    "owners": 9893,
-   "wearing": 93,
+   "wearing": 94,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -42579,8 +42579,8 @@
    ]
   },
   "01G34KG5RG000EM3XQPTD2XAFA": {
-   "owners": 3445,
-   "wearing": 302,
+   "owners": 3446,
+   "wearing": 303,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
@@ -44282,7 +44282,7 @@
    ]
   },
   "01M5Z51FCJMP5SR1N0Q9M27XRT": {
-   "owners": 1356,
+   "owners": 1357,
    "wearing": 802,
    "top": [
     [
@@ -44937,7 +44937,7 @@
    ]
   },
   "01M5ZG3FAA6SVFHES09A2WG0CP": {
-   "owners": 187,
+   "owners": 188,
    "wearing": 25,
    "top": [
     [
@@ -46143,8 +46143,8 @@
    ]
   },
   "01M5WJ738ZC99A90RSWPH0FPCJ": {
-   "owners": 94,
-   "wearing": 13,
+   "owners": 95,
+   "wearing": 14,
    "top": [
     [
      "01FDSMJ8MG0005Y8ZGBVC26NJ6",
